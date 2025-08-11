@@ -1,0 +1,107 @@
+# Build results
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider files
+.idea/
+
+# Visual Studio Code files
+.vscode/
+
+# Auto generated files
+*.generated.cs
+
+# NuGet Packages
+*.nupkg
+packages/
+# The packages folder can be ignored because it can be restored via NuGet
+**/packages/*
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# DotCover
+*.dotCover
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userprefs
+
+# Others
+*.log
+*.vspscc
+*.vssscc
+*.dbmdl
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# TFS
+$tf/
+
+# NPM packages
+node_modules/
+
+# Azure Functions
+.local.settings.json
+
+# Publish Output
+publish/
+
+# Resharper
+*.DotSettings.user
+
+# Others
+*.cache
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+
+# IIS Express
+.IISExpress/
+
+# JetBrains Rider
+.idea/
+
+# SQL Server files
+*.mdf
+*.ldf
+
+# Rider
+.idea/
+
+# Python virtual environment
+env/
+venv/
