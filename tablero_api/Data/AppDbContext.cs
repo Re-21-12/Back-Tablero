@@ -1,16 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using tablero_api.Models;
 
 namespace tablero_api.Data
 {
     public class AppDbContext : DbContext
     {
+        
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Partido> Partidos { get; set; }
         public DbSet<Equipo> Equipos { get; set; }
         public DbSet<Cuarto> Cuartos { get; set; }
         public DbSet<Localidad> Localidades { get; set; }
-        public DbSet<imagen> Imagenes { get; set; }
+        public DbSet<Imagen> Imagenes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,7 +70,7 @@ namespace tablero_api.Data
                 .HasKey(l => l.id_Localidad);
 
             // --- Imagen ---
-            modelBuilder.Entity<imagen>()
+            modelBuilder.Entity<Imagen>()
                 .HasKey(i => i.id_Imagen);
         }
     }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-
+using tablero_api.Models;
+using tablero_api.Repositories;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace tablero_api.Controllers
@@ -8,6 +9,12 @@ namespace tablero_api.Controllers
     [ApiController]
     public class LocalidadController : ControllerBase
     {
+        private readonly LocalidadRepository ct;
+
+        public LocalidadController(LocalidadRepository repo)
+        {
+            ct = repo;
+        }
         // GET: api/<LocalidadController>
         [HttpGet]
         public IEnumerable<string> Get()
@@ -24,8 +31,11 @@ namespace tablero_api.Controllers
 
         // POST api/<LocalidadController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public IActionResult Post(Localidad lc)
         {
+            //Localidad localidad = (Localidad)lrequest;
+            ct.AgregarLocalidad(lc);
+            return Ok("Localidad agregada");
         }
 
         // PUT api/<LocalidadController>/5
