@@ -1,40 +1,35 @@
 
 using Microsoft.EntityFrameworkCore;
 using tablero_api.Data;
+using tablero_api.Repositories;
+var builder = WebApplication.CreateBuilder(args);
 
-namespace tablero_api
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+// EF Core + SQL Server
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Dependencias
+builder.Services.AddScoped<ITableroRepository, Repository>();
+builder.Services.AddScoped<ITableroService, TableroService>();
+
+// CORS
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
 {
-    public class Program
+    options.AddPolicy("CorsPolicy", builder =>
     {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.WithOrigins(allowedOrigins)
+               .AllowAnyHeader()
+               .AllowAnyMethod();
+    });
+});
 
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+var app = builder.Build();
 
-            var app = builder.Build();
+app.UseCors("CorsPolicy");
 
-            app.MapGet("/", () => "API funcionando");
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
-        }
-    }
-}
+app.MapControllers();
+app.Run();
