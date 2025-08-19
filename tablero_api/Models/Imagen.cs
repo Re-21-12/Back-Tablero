@@ -2,7 +2,10 @@
 {
     public class Imagen
     {
-        public int id_Imagen { get; set; }
-        public string url { get; set; }
+        public int id_Imagen
+        {
+            get; set;
+        }
+        public string url { get; set; } = string.Empty;
     }
 }

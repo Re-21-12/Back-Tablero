@@ -30,5 +30,13 @@ namespace tablero_api.Services
             return entity;
         }
 
+        public async Task<T> DeleteAsync(int id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+            if (entity == null) throw new KeyNotFoundException($"Entidad con Id {id} no encontrado.");
+            await _repository.DeleteAsync(id);
+            return entity;
+        }
+
     }
 }

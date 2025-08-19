@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using tablero_api.Data;
 using tablero_api.Repositories;
+using tablero_api.Services;
+using tablero_api.Services.Interfaces;
 
 namespace tablero_api
 {
@@ -21,13 +23,13 @@ namespace tablero_api
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-           
+
             // Dependencias
 
-            /*
-            builder.Services.AddScoped<ITableroRepository, Repository>();
-            builder.Services.AddScoped<ITableroService, TableroService>();
-            */
+
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
+
 
             // CORS
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];

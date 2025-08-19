@@ -9,11 +9,14 @@ namespace tablero_api.Data
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        public DbSet<Partido> Partidos { get; set; }
-        public DbSet<Equipo> Equipos { get; set; }
-        public DbSet<Cuarto> Cuartos { get; set; }
-        public DbSet<Localidad> Localidades { get; set; }
-        public DbSet<Imagen> Imagenes { get; set; }
+        public DbSet<Cuarto> Cuartos => Set<Cuarto>();
+
+        public DbSet<Equipo> Equipos => Set<Equipo>();
+        public DbSet<Partido> Partidos => Set<Partido>();
+
+        public DbSet<Localidad> Localidades => Set<Localidad>();
+
+        public DbSet<Imagen> Imagenes => Set<Imagen>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,7 +31,7 @@ namespace tablero_api.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Partido>()
-                .HasOne(p => p.local)
+                .HasOne(p => p.Local)
                 .WithMany()
                 .HasForeignKey(p => p.id_Local)
                 .OnDelete(DeleteBehavior.Restrict);
