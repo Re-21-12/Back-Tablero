@@ -9,3 +9,22 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - DOTNET_RUNNING_IN_CONTAINER=true
       - DOTNET_USE_POLLING_FILE_WATCHER=true
+      - ConnectionStrings__Default=Server=db,1433;Database=${MSSQL_DB};User Id=${MSSQL_USER};Password=${MSSQL_PASSWORD};TrustServerCertificate=true;
+    depends_on:
+      - db
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${SA_PASSWORD}
+    ports:
+      - "${MSSQL_PORT}:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+      - ./sql-init:/docker-entrypoint-initdb.d
+
+volumes:
+  sql_data:
