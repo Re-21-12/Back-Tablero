@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
+using tablero_api.Models.DTOS;
 using tablero_api.Repositories;
 
 namespace tablero_api.Controllers
@@ -11,8 +12,13 @@ namespace tablero_api.Controllers
     {
         private readonly TableroRepository ct;
         [HttpPost]
-        public IActionResult Post(List<Cuarto> cuartos, Partido pt, Equipo local,Equipo visitante, Localidad lc)
+        public IActionResult Post(CreateTableroDto createTablerDto)
         {
+            var cuartos = createTablerDto.Cuartos;
+            var pt = createTablerDto.Partido;
+            var local = createTablerDto.Local;
+            var visitante = createTablerDto.Visitante;
+            var lc = createTablerDto.Localidad;
             pt.localidad = lc;
             pt.Local = local;
             pt.Visitante = visitante;

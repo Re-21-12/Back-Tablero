@@ -1,7 +1,16 @@
--- Crear base de datos
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'MiBase')
+-- Usar la base de datos master como contexto inicial
+USE master;
+GO
+
+-- Crear base de datos si no existe
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Tablero_DB')
 BEGIN
-    CREATE DATABASE [MiBase];
+    CREATE DATABASE Tablero_DB;
+    PRINT 'Base de datos creada exitosamente.';
+END
+ELSE
+BEGIN
+    PRINT 'La base de datos ya existe.';
 END
 GO
 
@@ -13,7 +22,7 @@ END
 GO
 
 -- Crear usuario dentro de la DB y asignar rol
-USE [MiBase];
+USE [Tablero_DB];
 IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'appuser')
 BEGIN
     CREATE USER [appuser] FOR LOGIN [appuser];
