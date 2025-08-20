@@ -10,6 +10,7 @@
         {
             get; set;
         }
+        public string? duenio { get; set; }
         public int Total_Punteo
         {
             get; set;
@@ -28,5 +29,7 @@
             get; set;
         }
         public Equipo Equipo { get; set; } = null!;
+
+        
     }
 }

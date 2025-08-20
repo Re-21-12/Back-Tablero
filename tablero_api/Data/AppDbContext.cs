@@ -25,7 +25,7 @@ namespace tablero_api.Data
                 .HasKey(p => p.id_Partido);
 
             modelBuilder.Entity<Partido>()
-                .HasOne(p => p.Localidad)
+                .HasOne(p => p.localidad)
                 .WithMany()
                 .HasForeignKey(p => p.id_Localidad)
                 .OnDelete(DeleteBehavior.Restrict);

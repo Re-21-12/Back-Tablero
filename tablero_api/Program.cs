@@ -59,6 +59,11 @@ namespace tablero_api
             app.MapControllers();
            
             app.Run();
+
+            
+
+
+
         }
     }
 }

@@ -98,6 +98,7 @@ namespace tablero_api.Migrations
                     id_Cuarto = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     No_Cuarto = table.Column<int>(type: "int", nullable: false),
+                    duenio = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Total_Punteo = table.Column<int>(type: "int", nullable: false),
                     Total_Faltas = table.Column<int>(type: "int", nullable: false),
                     id_Partido = table.Column<int>(type: "int", nullable: false),

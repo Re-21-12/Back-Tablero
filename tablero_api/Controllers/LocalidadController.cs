@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
-using tablero_api.Services.Interfaces;
-using System.Threading.Tasks;
+using tablero_api.Repositories;
+// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace tablero_api.Controllers
 {
@@ -9,60 +9,45 @@ namespace tablero_api.Controllers
     [ApiController]
     public class LocalidadController : ControllerBase
     {
-        private readonly IService<Localidad> _service;
+        private readonly LocalidadRepository ct;
 
-        public LocalidadController(IService<Localidad> service)
+        public LocalidadController(LocalidadRepository repo)
         {
-            _service = service;
+            ct = repo;
         }
-
         // GET: api/<LocalidadController>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Localidad>>> Get()
+        public IEnumerable<string> Get()
         {
-            var localidades = await _service.GetAllAsync();
-            return Ok(localidades);
+            return new string[] { "value1", "value2" };
         }
 
         // GET api/<LocalidadController>/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Localidad>> Get(int id)
+        public string Get(int id)
         {
-            var localidad = await _service.GetByIdAsync(id);
-            if (localidad == null)
-                return NotFound();
-            return Ok(localidad);
+            return "value";
         }
 
         // POST api/<LocalidadController>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Localidad lc)
+        public IActionResult Post(Localidad lc)
         {
-            await _service.CreateAsync(lc);
+            //Localidad localidad = (Localidad)lrequest;
+            ct.AgregarLocalidad(lc);
             return Ok("Localidad agregada");
         }
 
         // PUT api/<LocalidadController>/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Localidad lc)
+        public void Put(int id, [FromBody] string value)
         {
-            if (id != lc.id_Localidad)
-                return BadRequest("ID no coincide");
-
-            await _service.UpdateAsync(lc);
-            return Ok("Localidad actualizada");
         }
 
         // DELETE api/<LocalidadController>/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public void Delete(int id)
         {
-            var localidad = await _service.GetByIdAsync(id);
-            if (localidad == null)
-                return NotFound();
-
-            await _service.DeleteAsync(id);
-            return Ok("Localidad eliminada");
         }
     }
 }

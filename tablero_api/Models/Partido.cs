@@ -16,7 +16,7 @@ namespace tablero_api.Models
         {
             get; set;
         }
-        public Localidad Localidad { get; set; } = null!;
+        public Localidad localidad { get; set; } = null!;
         public int id_Local
         {
             get; set;

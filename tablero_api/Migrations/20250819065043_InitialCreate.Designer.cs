@@ -12,7 +12,7 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250811071927_InitialCreate")]
+    [Migration("20250819065043_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -25,7 +25,7 @@ namespace tablero_api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("tablero_api.Data.Cuarto", b =>
+            modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
                     b.Property<int>("id_Cuarto")
                         .ValueGeneratedOnAdd()
@@ -42,6 +42,9 @@ namespace tablero_api.Migrations
                     b.Property<int>("Total_Punteo")
                         .HasColumnType("int");
 
+                    b.Property<string>("duenio")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("id_Equipo")
                         .HasColumnType("int");
 
@@ -57,7 +60,7 @@ namespace tablero_api.Migrations
                     b.ToTable("Cuartos");
                 });
 
-            modelBuilder.Entity("tablero_api.Data.Equipo", b =>
+            modelBuilder.Entity("tablero_api.Models.Equipo", b =>
                 {
                     b.Property<int>("id_Equipo")
                         .ValueGeneratedOnAdd()
@@ -79,7 +82,24 @@ namespace tablero_api.Migrations
                     b.ToTable("Equipos");
                 });
 
-            modelBuilder.Entity("tablero_api.Data.Localidad", b =>
+            modelBuilder.Entity("tablero_api.Models.Imagen", b =>
+                {
+                    b.Property<int>("id_Imagen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id_Imagen"));
+
+                    b.Property<string>("url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("id_Imagen");
+
+                    b.ToTable("Imagenes");
+                });
+
+            modelBuilder.Entity("tablero_api.Models.Localidad", b =>
                 {
                     b.Property<int>("id_Localidad")
                         .ValueGeneratedOnAdd()
@@ -96,7 +116,7 @@ namespace tablero_api.Migrations
                     b.ToTable("Localidades");
                 });
 
-            modelBuilder.Entity("tablero_api.Data.Partido", b =>
+            modelBuilder.Entity("tablero_api.Models.Partido", b =>
                 {
                     b.Property<int>("id_Partido")
                         .ValueGeneratedOnAdd()
@@ -127,32 +147,15 @@ namespace tablero_api.Migrations
                     b.ToTable("Partidos");
                 });
 
-            modelBuilder.Entity("tablero_api.Data.imagen", b =>
+            modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
-                    b.Property<int>("id_Imagen")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id_Imagen"));
-
-                    b.Property<string>("url")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("id_Imagen");
-
-                    b.ToTable("Imagenes");
-                });
-
-            modelBuilder.Entity("tablero_api.Data.Cuarto", b =>
-                {
-                    b.HasOne("tablero_api.Data.Equipo", "Equipo")
+                    b.HasOne("tablero_api.Models.Equipo", "Equipo")
                         .WithMany()
                         .HasForeignKey("id_Equipo")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("tablero_api.Data.Partido", "Partido")
+                    b.HasOne("tablero_api.Models.Partido", "Partido")
                         .WithMany()
                         .HasForeignKey("id_Partido")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -163,9 +166,9 @@ namespace tablero_api.Migrations
                     b.Navigation("Partido");
                 });
 
-            modelBuilder.Entity("tablero_api.Data.Equipo", b =>
+            modelBuilder.Entity("tablero_api.Models.Equipo", b =>
                 {
-                    b.HasOne("tablero_api.Data.Localidad", "Localidad")
+                    b.HasOne("tablero_api.Models.Localidad", "Localidad")
                         .WithMany()
                         .HasForeignKey("id_Localidad")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -174,31 +177,31 @@ namespace tablero_api.Migrations
                     b.Navigation("Localidad");
                 });
 
-            modelBuilder.Entity("tablero_api.Data.Partido", b =>
+            modelBuilder.Entity("tablero_api.Models.Partido", b =>
                 {
-                    b.HasOne("tablero_api.Data.Equipo", "local")
+                    b.HasOne("tablero_api.Models.Equipo", "Local")
                         .WithMany()
                         .HasForeignKey("id_Local")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("tablero_api.Data.Localidad", "Localidad")
+                    b.HasOne("tablero_api.Models.Localidad", "localidad")
                         .WithMany()
                         .HasForeignKey("id_Localidad")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("tablero_api.Data.Equipo", "Visitante")
+                    b.HasOne("tablero_api.Models.Equipo", "Visitante")
                         .WithMany()
                         .HasForeignKey("id_Visitante")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Localidad");
+                    b.Navigation("Local");
 
                     b.Navigation("Visitante");
 
-                    b.Navigation("local");
+                    b.Navigation("localidad");
                 });
 #pragma warning restore 612, 618
         }
