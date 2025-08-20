@@ -1,13 +1,22 @@
 -- Crear base de datos
-CREATE DATABASE [$(MSSQL_DB)];
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'MiBase')
+BEGIN
+    CREATE DATABASE [MiBase];
+END
 GO
 
--- Crear login para el usuario de aplicación
-CREATE LOGIN [$(MSSQL_USER)] WITH PASSWORD = '$(MSSQL_PASSWORD)', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
+-- Crear login a nivel servidor
+IF NOT EXISTS (SELECT name FROM sys.sql_logins WHERE name = 'appuser')
+BEGIN
+    CREATE LOGIN [appuser] WITH PASSWORD = 'AppUserPass!2025', CHECK_POLICY = OFF, CHECK_EXPIRATION = OFF;
+END
 GO
 
--- Crear usuario dentro de la DB y asignarle rol
-USE [$(MSSQL_DB)];
-CREATE USER [$(MSSQL_USER)] FOR LOGIN [$(MSSQL_USER)];
-ALTER ROLE db_owner ADD MEMBER [$(MSSQL_USER)];
+-- Crear usuario dentro de la DB y asignar rol
+USE [MiBase];
+IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'appuser')
+BEGIN
+    CREATE USER [appuser] FOR LOGIN [appuser];
+    ALTER ROLE db_owner ADD MEMBER [appuser];
+END
 GO

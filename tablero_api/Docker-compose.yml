@@ -9,22 +9,34 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - DOTNET_RUNNING_IN_CONTAINER=true
       - DOTNET_USE_POLLING_FILE_WATCHER=true
-      - ConnectionStrings__Default=Server=db,1433;Database=${MSSQL_DB};User Id=${MSSQL_USER};Password=${MSSQL_PASSWORD};TrustServerCertificate=true;
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=MiBase;User Id=appuser;Password=AppUserPass!2025;TrustServerCertificate=true;
     depends_on:
-      - db
+      - sqlserver
+    networks:
+      - backend
 
-  db:
+  sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver
-    restart: unless-stopped
+    restart: always
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${SA_PASSWORD}
+      - SA_PASSWORD=YourStrong!Passw0rd
+      - MSSQL_PID=Express
     ports:
-      - "${MSSQL_PORT}:1433"
+      - "1433:1433"
     volumes:
       - sql_data:/var/opt/mssql
       - ./sql-init:/docker-entrypoint-initdb.d
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 4g
 
 volumes:
   sql_data:
+
+networks:
+  backend:
