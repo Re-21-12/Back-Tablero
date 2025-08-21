@@ -40,11 +40,15 @@ namespace tablero_api
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("CorsPolicy", builder =>
+                options.AddPolicy("AllowFrontend", policy =>
                 {
-                    builder.WithOrigins(allowedOrigins)
-                           .AllowAnyHeader()
-                           .AllowAnyMethod();
+                    policy.WithOrigins(
+                        "http://localhost:4200",
+                        "https://front-analisis-registros.netlify.app",
+                        "https://proy-analisis-re2112.duckdns.org"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
                 });
             });
 
@@ -59,7 +63,7 @@ namespace tablero_api
                 app.UseSwaggerUI();
             }
 
-            app.UseCors("CorsPolicy");
+            app.UseCors("AllowFrontend");
 
             app.MapControllers();
            
