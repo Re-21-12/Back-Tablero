@@ -7,6 +7,8 @@
         Task PostAsync(T entity);
         Task PutAsync(T entity);
         Task DeleteAsync(int id);
+        Task<IEnumerable<T>> GetByTwoParameters(int firstParam, int twoParam);
+
     }
 
 }

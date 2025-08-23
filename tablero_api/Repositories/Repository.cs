@@ -1,6 +1,7 @@
-﻿using tablero_api.Repositories;
+﻿using Microsoft.EntityFrameworkCore;
 using tablero_api.Data;
-using Microsoft.EntityFrameworkCore;
+using tablero_api.Models;
+using tablero_api.Repositories;
 namespace tablero_api.Repositories
 {
     // El repositorio es una clase generica que llama a la base de datos
@@ -45,6 +46,17 @@ namespace tablero_api.Repositories
 
             _context.Set<T>().Remove(entity);
             await _context.SaveChangesAsync();
+        }
+        public async Task<IEnumerable<T>> GetByTwoParameters(int firstParam, int secondParam)
+        {
+            if (typeof(T) != typeof(Cuarto))
+                throw new NotSupportedException("Este método solo es válido para Cuarto.");
+
+            var result = await _context.Cuartos
+                .Where(c => c.id_Partido == firstParam && c.id_Equipo == secondParam)
+                .ToListAsync();
+
+            return (IEnumerable<T>)result;
         }
     }
 }

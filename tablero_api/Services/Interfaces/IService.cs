@@ -8,6 +8,8 @@ namespace tablero_api.Services.Interfaces
         Task<T> CreateAsync(T entity);
         Task<T> UpdateAsync(T entity);
         Task<T> DeleteAsync(int id);
+        Task<IEnumerable<T>> GetByTwoParameters(int firstParam, int secondParam);
+
     }
 
 }
