@@ -65,15 +65,18 @@ namespace tablero_api.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreatePartidoDto dto)
         {
+            var equipoLocal = await _equipoService.GetByIdAsync(dto.id_Local);
+            var localidad = await _localidadService.GetByIdAsync(equipoLocal.id_Localidad);
+
             var partido = new Partido
             {
                 FechaHora = dto.FechaHora,
-                id_Localidad = dto.id_Localidad,
+                id_Localidad = localidad.id_Localidad,
                 id_Local = dto.id_Local,
                 id_Visitante = dto.id_Visitante
             };
             var creado = await _partidoService.CreateAsync(partido);
-            return CreatedAtAction(nameof(Get), new { id = creado.id_Partido }, creado);
+            return CreatedAtAction(nameof(Get), new { id = creado.id_Partido }, new { id = creado.id_Partido });
         }
     }
 }
