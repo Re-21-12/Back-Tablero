@@ -9,19 +9,25 @@ namespace tablero_api.Controllers
     [ApiController]
     public class PartidoController : ControllerBase
     {
-        private readonly IService<Partido> _service;
+        private readonly IService<Partido> _partidoService;
+        private readonly IService<Equipo> _equipoService;
+        private readonly IService<Localidad> _localidadService;
 
-        public PartidoController(IService<Partido> service)
+
+        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice)
         {
-            _service = service;
+            _partidoService = partidoService;
+            _equipoService = equipoService;
+            _localidadService = localidadSerice;
+
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PartidoDto>>> Get()
         {
-            var partidos = await _service.GetAllAsync();
+            var partidos = await _partidoService.GetAllAsync();
+
             var result = partidos.Select(p => new PartidoDto(
-                p.id_Partido,
                 p.FechaHora,
                 p.id_Localidad,
                 p.id_Local,
@@ -33,18 +39,27 @@ namespace tablero_api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<PartidoDto>> Get(int id)
         {
-            var partido = await _service.GetByIdAsync(id);
+            var partido = await _partidoService.GetByIdAsync(id);
             if (partido == null)
                 return NotFound();
 
+
             var dto = new PartidoDto(
-                partido.id_Partido,
                 partido.FechaHora,
                 partido.id_Localidad,
                 partido.id_Local,
                 partido.id_Visitante
             );
-            return Ok(dto);
+            var equipoLocalNombre = await _equipoService.GetByIdAsync(partido.id_Local);
+            var equipoVisitanteNombre = await _equipoService.GetByIdAsync(partido.id_Visitante);
+            var localidad = await _localidadService.GetByIdAsync(partido.id_Localidad);
+            var dtoResponse = new ResponsePartidoDto(
+                dto.FechaHora,
+                localidad != null ? localidad.Nombre : "Desconocida",
+                equipoLocalNombre != null ? equipoLocalNombre.Nombre : "Desconocido",
+                equipoVisitanteNombre != null ? equipoVisitanteNombre.Nombre : "Desconocido"
+            );
+            return Ok(dtoResponse);
         }
 
         [HttpPost]
@@ -57,7 +72,7 @@ namespace tablero_api.Controllers
                 id_Local = dto.id_Local,
                 id_Visitante = dto.id_Visitante
             };
-            var creado = await _service.CreateAsync(partido);
+            var creado = await _partidoService.CreateAsync(partido);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Partido }, creado);
         }
     }
