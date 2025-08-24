@@ -12,8 +12,8 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250819065043_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250824075611_initialCreate")]
+    partial class initialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
