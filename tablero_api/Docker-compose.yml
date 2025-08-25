@@ -16,7 +16,7 @@ services:
     image: revic2112/back-tablero-desarrolloweb:latest
 
     ports:
-      - "8080"
+      - "8080:8080"
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - DOTNET_RUNNING_IN_CONTAINER=true
@@ -57,7 +57,9 @@ services:
       - server
 
   migrate:
-    image: revic2112/migrate
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
     depends_on:
       - sqlserver
     environment:
