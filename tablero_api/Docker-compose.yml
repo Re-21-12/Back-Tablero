@@ -16,7 +16,7 @@ services:
     image: revic2112/back-tablero-desarrolloweb:latest
 
     ports:
-      - "5000:8080"
+      - "8080:8080"
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - DOTNET_RUNNING_IN_CONTAINER=true
@@ -63,10 +63,9 @@ services:
     depends_on:
       - sqlserver
     environment:
-      - ConnectionStrings__Default=Server=localhost,1433;Database=Tablero_DB;User Id=appuser;Password=AppUserPass!2025;TrustServerCertificate=true;
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=Tablero_DB;User Id=appuser;Password=AppUserPass!2025;TrustServerCertificate=true;
     networks:
       - server
-
 
 volumes:
   sql_data:
