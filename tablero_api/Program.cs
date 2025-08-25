@@ -46,7 +46,9 @@ namespace tablero_api
                         "http://localhost:4200",
                         "https://front-analisis-registros.netlify.app",
                         "https://proy-analisis-re2112.duckdns.org",
-                        "http://frontend:4200"
+                        "http://frontend:4200",
+                        "http://157.180.19.137:4200",
+                        "http://157.180.19.137:80"
 
                     )
                     .AllowAnyHeader()
