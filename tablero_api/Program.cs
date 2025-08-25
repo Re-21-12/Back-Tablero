@@ -45,7 +45,9 @@ namespace tablero_api
                     policy.WithOrigins(
                         "http://localhost:4200",
                         "https://front-analisis-registros.netlify.app",
-                        "https://proy-analisis-re2112.duckdns.org"
+                        "https://proy-analisis-re2112.duckdns.org",
+                        "http://frontend:4200"
+
                     )
                     .AllowAnyHeader()
                     .AllowAnyMethod();

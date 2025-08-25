@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   frontend:
-    image: revic2112/front-tablero-desarrolloweb:fix-path
+    image: revic2112/front-tablero-nginx:latest
     container_name: frontend
     restart: always
     ports:
@@ -57,9 +57,7 @@ services:
       - server
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.migrate
+    image: revic2112/migrate
     depends_on:
       - sqlserver
     environment:
