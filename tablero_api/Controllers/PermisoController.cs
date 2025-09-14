@@ -1,0 +1,64 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using tablero_api.Models;
+using tablero_api.Services.Interfaces;
+
+namespace tablero_api.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
+    public class PermisoController : ControllerBase
+    {
+        private readonly IService<Permiso> _service;
+
+        public PermisoController(IService<Permiso> service)
+        {
+            _service = service;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Permiso>>> Get()
+        {
+            var permisos = await _service.GetAllAsync();
+            return Ok(permisos);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Permiso>> Get(int id)
+        {
+            var permiso = await _service.GetByIdAsync(id);
+            if (permiso == null)
+                return NotFound();
+            return Ok(permiso);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] Permiso permiso)
+        {
+            var creado = await _service.CreateAsync(permiso);
+            return CreatedAtAction(nameof(Get), new { id = creado.Id_Permiso }, creado);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] Permiso permiso)
+        {
+            if (id != permiso.Id_Permiso)
+                return BadRequest("El ID no coincide");
+
+            var actualizado = await _service.UpdateAsync(permiso);
+            return Ok(actualizado);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var permiso = await _service.GetByIdAsync(id);
+            if (permiso == null)
+                return NotFound();
+
+            await _service.DeleteAsync(id);
+            return Ok("Permiso eliminado");
+        }
+    }
+}

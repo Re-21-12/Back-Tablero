@@ -12,5 +12,7 @@
             get; set;
         }
         public Localidad Localidad { get; set; } = null!;
+        public ICollection<Jugador> Jugadores { get; set; } = [];
+
     }
 }

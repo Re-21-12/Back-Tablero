@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using tablero_api.Data;
 using tablero_api.Models;
-using tablero_api.Repositories;
+using tablero_api.Repositories.Interfaces;
 namespace tablero_api.Repositories
 {
     // El repositorio es una clase generica que llama a la base de datos
@@ -57,6 +58,10 @@ namespace tablero_api.Repositories
                 .ToListAsync();
 
             return (IEnumerable<T>)result;
+        }
+        public async Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _context.Set<T>().FirstOrDefaultAsync(predicate);
         }
     }
 }

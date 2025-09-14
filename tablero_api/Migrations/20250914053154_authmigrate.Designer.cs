@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tablero_api.Data;
 
@@ -11,9 +12,11 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250914053154_authmigrate")]
+    partial class authmigrate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -109,43 +112,6 @@ namespace tablero_api.Migrations
                     b.HasKey("id_Imagen");
 
                     b.ToTable("Imagenes");
-                });
-
-            modelBuilder.Entity("tablero_api.Models.Jugador", b =>
-                {
-                    b.Property<int>("id_Jugador")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id_Jugador"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Edad")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UpdatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<int>("id_Equipo")
-                        .HasColumnType("int");
-
-                    b.HasKey("id_Jugador");
-
-                    b.HasIndex("id_Equipo");
-
-                    b.ToTable("Jugadores");
                 });
 
             modelBuilder.Entity("tablero_api.Models.Localidad", b =>
@@ -266,12 +232,6 @@ namespace tablero_api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatedBy")
-                        .HasColumnType("int");
-
                     b.Property<int>("Id_Rol")
                         .HasColumnType("int");
 
@@ -280,12 +240,6 @@ namespace tablero_api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("RolId_Rol")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UpdatedBy")
                         .HasColumnType("int");
 
                     b.HasKey("Id_Usuario");
@@ -340,17 +294,6 @@ namespace tablero_api.Migrations
                     b.Navigation("Localidad");
                 });
 
-            modelBuilder.Entity("tablero_api.Models.Jugador", b =>
-                {
-                    b.HasOne("tablero_api.Models.Equipo", "Equipo")
-                        .WithMany("Jugadores")
-                        .HasForeignKey("id_Equipo")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Equipo");
-                });
-
             modelBuilder.Entity("tablero_api.Models.Partido", b =>
                 {
                     b.HasOne("tablero_api.Models.Equipo", "Local")
@@ -387,11 +330,6 @@ namespace tablero_api.Migrations
                         .IsRequired();
 
                     b.Navigation("Rol");
-                });
-
-            modelBuilder.Entity("tablero_api.Models.Equipo", b =>
-                {
-                    b.Navigation("Jugadores");
                 });
 
             modelBuilder.Entity("tablero_api.Models.Rol", b =>

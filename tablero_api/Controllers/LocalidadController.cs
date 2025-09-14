@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 using tablero_api.Models;
 using tablero_api.Services.Interfaces;
-using System.Threading.Tasks;
 
 namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LocalidadController : ControllerBase
     {
         private readonly IService<Localidad> _service;

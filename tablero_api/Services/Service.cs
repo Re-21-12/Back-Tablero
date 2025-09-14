@@ -1,6 +1,7 @@
-﻿using tablero_api.Services.Interfaces;
-using tablero_api.Repositories;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
+using tablero_api.Repositories.Interfaces;
+using tablero_api.Services.Interfaces;
 namespace tablero_api.Services
 {
     public class Service<T> : IService<T> where T : class
@@ -43,6 +44,10 @@ namespace tablero_api.Services
             var entity = await _repository.GetByTwoParameters(firstParam, secondParam);
             if (entity == null) throw new ArgumentNullException();
             return entity;
+        }
+        public async Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _repository.GetByPredicateAsync(predicate);
         }
     }
 }
