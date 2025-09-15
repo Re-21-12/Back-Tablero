@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
@@ -7,6 +8,7 @@ namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EquipoController : ControllerBase
     {
         private readonly IService<Equipo> _service;
@@ -16,19 +18,31 @@ namespace tablero_api.Controllers
             _service = service;
         }
 
+
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Equipo>>> Get()
+        public async Task<ActionResult<IEnumerable<EquipoDto>>>Get()
         {
             var equipos = await _service.GetAllAsync();
-            return Ok(equipos);
+
+            var dto = equipos.Select(e => new EquipoDto(
+                e.Nombre,
+                e.Localidad?.Nombre ?? string.Empty
+                ));
+            return Ok(dto);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Equipo>> Get(int id)
+        public async Task<ActionResult<EquipoDto>> Get(int id)
         {
             var equipo = await _service.GetByIdAsync(id);
             if (equipo == null)
                 return NotFound();
+
+            var dto = new EquipoDto
+            (
+                equipo.Nombre,
+                equipo.Localidad?.Nombre ?? string.Empty
+            );
             return Ok(equipo);
         }
 
@@ -43,5 +57,32 @@ namespace tablero_api.Controllers
             await _service.CreateAsync(equipo);
             return Ok("Equipo agregado");
         }
+        [HttpPut]
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateEquipoDto? equipoDto)
+        {
+            var equipo = await _service.GetByIdAsync(id);
+            if (equipo == null)
+                return BadRequest("ID no encontrado");
+
+            var mapEquipo = new Equipo()
+            {
+                Nombre = equipoDto.Nombre,
+                id_Localidad = equipoDto.id_Localidad
+            }; 
+
+            var actualizado = await _service.UpdateAsync(mapEquipo);
+                return Ok(actualizado);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var equipo = await _service.GetByIdAsync(id);
+            if (equipo == null)
+                return NotFound();
+            await _service.DeleteAsync(id);
+            return Ok("Jugador eliminado");
+        }
+
     }
 }

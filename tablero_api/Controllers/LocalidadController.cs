@@ -1,53 +1,107 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
-using tablero_api.Repositories;
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using tablero_api.Models.DTOS;
+using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class LocalidadController : ControllerBase
     {
-        private readonly LocalidadRepository ct;
+        private readonly IService<Localidad> _service;
 
-        public LocalidadController(LocalidadRepository repo)
+        public LocalidadController(IService<Localidad> service)
         {
-            ct = repo;
+            _service = service;
         }
-        // GET: api/<LocalidadController>
+
+        // GET: api/Localidad
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(IEnumerable<CreatedLocalidadDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<CreatedLocalidadDto>>> Get()
         {
-            return new string[] { "value1", "value2" };
+            var localidades = await _service.GetAllAsync();
+
+            var dto = localidades.Select(l => new CreatedLocalidadDto(
+                l.id_Localidad,
+                l.Nombre
+            ));
+
+            return Ok(dto);
         }
 
-        // GET api/<LocalidadController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        // GET: api/Localidad/5
+        [HttpGet("{id:int}")]
+        [ProducesResponseType(typeof(CreatedLocalidadDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<CreatedLocalidadDto>> Get(int id)
         {
-            return "value";
+            var localidad = await _service.GetByIdAsync(id);
+            if (localidad == null)
+                return NotFound();
+
+            var dto = new CreatedLocalidadDto(
+                localidad.id_Localidad,
+                localidad.Nombre
+            );
+
+            return Ok(dto);
         }
 
-        // POST api/<LocalidadController>
+        // POST: api/Localidad
         [HttpPost]
-        public IActionResult Post(Localidad lc)
+        [ProducesResponseType(typeof(CreatedLocalidadDto), StatusCodes.Status201Created)]
+        public async Task<ActionResult<CreatedLocalidadDto>> Post([FromBody] LocalidadDto lc)
         {
-            //Localidad localidad = (Localidad)lrequest;
-            ct.AgregarLocalidad(lc);
-            return Ok("Localidad agregada");
+            var localidad = new Localidad
+            {
+                Nombre = lc.Nombre
+            };
+
+            await _service.CreateAsync(localidad);
+
+            var outDto = new CreatedLocalidadDto(localidad.id_Localidad, localidad.Nombre);
+
+            return CreatedAtAction(nameof(Get), new { id = outDto.id }, outDto);
         }
 
-        // PUT api/<LocalidadController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        // PUT: api/Localidad/5
+        [HttpPut("{id:int}")]
+        [ProducesResponseType(typeof(CreatedLocalidadDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<CreatedLocalidadDto>> Put(int id, [FromBody] CreatedLocalidadDto lc)
         {
+            if (id != lc.id)
+                return BadRequest("ID no coincide");
+
+            var localidad = new Localidad
+            {
+                id_Localidad = lc.id,
+                Nombre = lc.Nombre
+            };
+
+            var actualizado = await _service.UpdateAsync(localidad);
+
+            var dto = new CreatedLocalidadDto(actualizado.id_Localidad, actualizado.Nombre);
+
+            return Ok(dto);
         }
 
-        // DELETE api/<LocalidadController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        // DELETE: api/Localidad/5
+        [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Delete(int id)
         {
+            var localidad = await _service.GetByIdAsync(id);
+            if (localidad == null)
+                return NotFound();
+
+            await _service.DeleteAsync(id);
+            return NoContent();
         }
     }
 }

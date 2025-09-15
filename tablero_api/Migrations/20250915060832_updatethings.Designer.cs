@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tablero_api.Data;
 
@@ -11,9 +12,11 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250915060832_updatethings")]
+    partial class updatethings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -118,10 +121,6 @@ namespace tablero_api.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id_Jugador"));
-
-                    b.Property<string>("Apellido")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -323,6 +322,9 @@ namespace tablero_api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("RolId_Rol")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -331,7 +333,7 @@ namespace tablero_api.Migrations
 
                     b.HasKey("Id_Usuario");
 
-                    b.HasIndex("Id_Rol");
+                    b.HasIndex("RolId_Rol");
 
                     b.ToTable("Usuarios");
                 });
@@ -434,7 +436,7 @@ namespace tablero_api.Migrations
                 {
                     b.HasOne("tablero_api.Models.Rol", "Rol")
                         .WithMany("Usuarios")
-                        .HasForeignKey("Id_Rol")
+                        .HasForeignKey("RolId_Rol")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

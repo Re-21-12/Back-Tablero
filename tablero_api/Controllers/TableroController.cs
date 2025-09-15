@@ -1,10 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using tablero_api.Data;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
-using tablero_api.Repositories;
+using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Controllers
 {
@@ -12,96 +10,68 @@ namespace tablero_api.Controllers
     [ApiController]
     public class TableroController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IService<Partido> _partidoService;
+        private readonly IService<Equipo> _equipoService;
+        private readonly IService<Localidad> _localidadService;
+        private readonly IService<Cuarto> _cuartoService;
 
-        public TableroController(AppDbContext context)
+        public TableroController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadService, IService<Cuarto> cuartoService)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _partidoService = partidoService;
+            _equipoService = equipoService;
+            _localidadService = localidadService;
+            _cuartoService = cuartoService;
         }
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody] CreateTableroDto dto)
 
+        [HttpGet("{id}/resultado")]
+        public async Task<ActionResult<ResultadoPartidoDto>> ResultadoPartido(int id)
         {
-            if (dto == null) return BadRequest("Body invalido");
-            if (dto.Partido == null) return BadRequest("Partido es invalido");
-            if (dto.Local == null) return BadRequest("El equipo local es invalido");
-            if (dto.Visitante == null) return BadRequest("El equipo visitante es invalido");
-            if (dto.Localidad == null) return BadRequest("Localidad es invalido");
-
-            if (dto == null)
-                return BadRequest("El request está vacío");
-
-
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
-                var local = await _context.Equipos.FindAsync(dto.Partido.id_Local);
-                var visitante = await _context.Equipos.FindAsync(dto.Partido.id_Visitante);
-                var localidad = await _context.Localidades.FindAsync(dto.Partido.id_Localidad);
-                if (local == null || visitante == null|| localidad == null)
-                    throw new InvalidOperationException("Equipos o localidades no encontrados");
-                // Crear partido y asignar relaciones
-                var partido = new Partido
+                if (id <= 0)
                 {
-                    FechaHora = dto.Partido.FechaHora,
-                    Local = local,
-                    Visitante = visitante,
-                    localidad = localidad
-                };
+                    return BadRequest("El ID del partido debe ser un número positivo.");
+                }
 
-                _context.Partidos.Add(partido);
-
-                // Crear cuartos usando los mismos objetos que EF ya está trackeando
-                
-                var cuartos = dto.Cuartos.Select(c =>
+                var partido = await _partidoService.GetByIdAsync(id);
+                var equipoLocal = partido != null ? await _equipoService.GetByIdAsync(partido.id_Local) : null;
+                if(equipoLocal == null)
                 {
-                    if (c.id_Cuarto != 0)
-                        throw new InvalidOperationException("Datos del cuarto invalidos");
+                    return NotFound("Equipo local no encontrado.");
+                }
+                var equipoVisitante = partido != null ? await _equipoService.GetByIdAsync(partido.id_Visitante) : null;
 
-                    if (c.Total_Punteo < 0 || c.Total_Faltas < 0)
-                    {
-                        throw new InvalidDataException("Puntaje o faltas invalido");
-                    }
-                    return new Cuarto
-                    {
-                        No_Cuarto = c.No_Cuarto,
-                        duenio = c.duenio,
-                        Total_Punteo = c.Total_Punteo,
-                        
-                        Total_Faltas = c.Total_Faltas,
-                        
-                        Partido = partido,
-                        Equipo = c.duenio.ToLower() switch
-                        {
-                            "v" => visitante,
-                            "l" => local,
-                            _ => throw new InvalidOperationException("Dueño invalido")
-                        }
-                    };
-                    
-                }).ToList();
-
-
-                _context.Cuartos.AddRange(cuartos);
-
-                await _context.SaveChangesAsync();
-
-                //Calculo de Ganador
-
-                return Ok(new
+                if (partido == null || equipoLocal == null || equipoVisitante == null)
                 {
-                    PartidoId = partido.id_Partido,
-                    CuartosGuardados = cuartos.Count
-                });
+                    return NotFound("Partido o equipos no encontrados.");
+                }
+
+                var cuartosEquipoLocal = await _cuartoService.GetByTwoParameters(partido.id_Partido, equipoLocal.id_Equipo);
+                var cuartosEquipoVisitante = await _cuartoService.GetByTwoParameters(partido.id_Partido, equipoVisitante.id_Equipo);
+
+                var totalPunteoLocal = cuartosEquipoLocal.Sum(c => c.Total_Punteo);
+                var totalPunteoVisitante = cuartosEquipoVisitante.Sum(c => c.Total_Punteo);
+                var totalFaltasLocal = cuartosEquipoLocal.Sum(c => c.Total_Faltas);
+                var totalFaltasVisitante = cuartosEquipoVisitante.Sum(c => c.Total_Faltas);
+
+                var localidad = await _localidadService.GetByIdAsync(equipoLocal.id_Localidad);
+
+                var resultado = new ResultadoPartidoDto(
+                    equipoLocal.Nombre,
+                    equipoVisitante.Nombre,
+                    localidad?.Nombre ?? "Desconocida",
+                    totalFaltasLocal,
+                    totalFaltasVisitante,
+                    totalPunteoLocal,
+                    totalPunteoVisitante
+                );
+
+                return Ok(resultado);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                // Si hay cualquier error, deshacer transacción
-                await transaction.RollbackAsync();
-                return BadRequest(new { error = ex.Message });
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
-       
     }
 }

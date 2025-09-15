@@ -12,8 +12,8 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250819065043_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250914053154_authmigrate")]
+    partial class authmigrate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,21 @@ namespace tablero_api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("PermisoRol", b =>
+                {
+                    b.Property<int>("PermisosId_Permiso")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RolesId_Rol")
+                        .HasColumnType("int");
+
+                    b.HasKey("PermisosId_Permiso", "RolesId_Rol");
+
+                    b.HasIndex("RolesId_Rol");
+
+                    b.ToTable("RolPermisos", (string)null);
+                });
 
             modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
@@ -147,6 +162,108 @@ namespace tablero_api.Migrations
                     b.ToTable("Partidos");
                 });
 
+            modelBuilder.Entity("tablero_api.Models.Permiso", b =>
+                {
+                    b.Property<int>("Id_Permiso")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id_Permiso"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id_Permiso");
+
+                    b.ToTable("Permisos");
+                });
+
+            modelBuilder.Entity("tablero_api.Models.Rol", b =>
+                {
+                    b.Property<int>("Id_Rol")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id_Rol"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id_Rol");
+
+                    b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("tablero_api.Models.Usuario", b =>
+                {
+                    b.Property<int>("Id_Usuario")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id_Usuario"));
+
+                    b.Property<string>("Contrasena")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Id_Rol")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RolId_Rol")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id_Usuario");
+
+                    b.HasIndex("RolId_Rol");
+
+                    b.ToTable("Usuarios");
+                });
+
+            modelBuilder.Entity("PermisoRol", b =>
+                {
+                    b.HasOne("tablero_api.Models.Permiso", null)
+                        .WithMany()
+                        .HasForeignKey("PermisosId_Permiso")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("tablero_api.Models.Rol", null)
+                        .WithMany()
+                        .HasForeignKey("RolesId_Rol")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
                     b.HasOne("tablero_api.Models.Equipo", "Equipo")
@@ -202,6 +319,22 @@ namespace tablero_api.Migrations
                     b.Navigation("Visitante");
 
                     b.Navigation("localidad");
+                });
+
+            modelBuilder.Entity("tablero_api.Models.Usuario", b =>
+                {
+                    b.HasOne("tablero_api.Models.Rol", "Rol")
+                        .WithMany("Usuarios")
+                        .HasForeignKey("RolId_Rol")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rol");
+                });
+
+            modelBuilder.Entity("tablero_api.Models.Rol", b =>
+                {
+                    b.Navigation("Usuarios");
                 });
 #pragma warning restore 612, 618
         }

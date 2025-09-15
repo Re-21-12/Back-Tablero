@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
@@ -7,19 +8,24 @@ namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CuartoController : ControllerBase
     {
-        private readonly IService<Cuarto> _service;
+        private readonly IService<Cuarto> _cuartoService;
+        private readonly IService<Equipo> _equipoService;
 
-        public CuartoController(IService<Cuarto> service)
+
+        public CuartoController(IService<Cuarto> cuartoService, IService<Equipo> equipoService)
         {
-            _service = service;
+            _cuartoService = cuartoService;
+            _equipoService= equipoService;
+
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CuartoDto>>> Get()
         {
-            var cuartos = await _service.GetAllAsync();
+            var cuartos = await _cuartoService.GetAllAsync();
             var result = cuartos.Select(c => new CuartoDto(
                 c.id_Cuarto,
                 c.No_Cuarto,
@@ -32,19 +38,18 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<CuartoDto>> Get(int id)
+        public async Task<ActionResult<ResponseCuarto>> Get(int id)
         {
-            var cuarto = await _service.GetByIdAsync(id);
-            if (cuarto == null)
+            var cuarto = await _cuartoService.GetByIdAsync(id);
+            var equipo =  await _equipoService.GetByIdAsync(cuarto.id_Equipo) ;
+            if (cuarto == null || equipo == null)
                 return NotFound();
 
-            var dto = new CuartoDto(
-                cuarto.id_Cuarto,
+            var dto = new ResponseCuarto(
                 cuarto.No_Cuarto,
                 cuarto.Total_Punteo,
                 cuarto.Total_Faltas,
-                cuarto.id_Partido,
-                cuarto.id_Equipo
+                equipo != null ? equipo.Nombre : "Desconocido"
             );
             return Ok(dto);
         }
@@ -60,8 +65,9 @@ namespace tablero_api.Controllers
                 id_Partido = dto.id_Partido,
                 id_Equipo = dto.id_Equipo
             };
-            var creado = await _service.CreateAsync(cuarto);
+            var creado = await _cuartoService.CreateAsync(cuarto);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Cuarto }, creado);
         }
+
     }
 }

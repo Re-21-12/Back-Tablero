@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
+using System.Data;
 using tablero_api.Models;
 
 namespace tablero_api.Data
@@ -17,7 +19,12 @@ namespace tablero_api.Data
         public DbSet<Localidad> Localidades => Set<Localidad>();
 
         public DbSet<Imagen> Imagenes => Set<Imagen>();
+        public DbSet<Usuario> Usuarios => Set<Usuario>();
+        public DbSet<Permiso> Permisos => Set<Permiso>();
+        public DbSet<Rol> Roles => Set<Rol>();
+        public DbSet<Jugador> Jugadores => Set<Jugador>();
 
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // --- Partido ---
@@ -52,6 +59,12 @@ namespace tablero_api.Data
                 .HasForeignKey(e => e.id_Localidad)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<Equipo>()
+                .HasMany(e => e.Jugadores)
+                .WithOne(j => j.Equipo)
+                .HasForeignKey(j => j.id_Equipo)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // --- Cuarto ---
             modelBuilder.Entity<Cuarto>()
                 .HasKey(c => c.id_Cuarto);
@@ -75,6 +88,14 @@ namespace tablero_api.Data
             // --- Imagen ---
             modelBuilder.Entity<Imagen>()
                 .HasKey(i => i.id_Imagen);
+
+            // -- Roles -- 
+            modelBuilder.Entity<Rol>()
+                    .HasMany(r => r.Permisos)
+                    .WithMany(p => p.Roles)
+                    .UsingEntity(j => j.ToTable("RolPermisos"));
+
         }
+
     }
 }
