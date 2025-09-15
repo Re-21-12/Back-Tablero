@@ -22,6 +22,10 @@ namespace tablero_api.Repositories
         {
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.Nombre== nombre);
         }
+        public async Task<Usuario?> GetByIdAsync(int id)
+        {
+            return await _context.Usuarios.FindAsync(id);
+        }
 
         public async Task AddAsync(Usuario usuario)
         {

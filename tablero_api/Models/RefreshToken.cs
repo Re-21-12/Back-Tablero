@@ -1,25 +1,25 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace tablero_api.Models
 {
-    public class Usuario
+    public class RefreshToken
     {
         [Key]
-        public int Id_Usuario
+        public int Id
         {
             get; set;
         }
-        [Required]
-        public string Nombre { get; set; } = string.Empty;
-        [Required]
-        public string Contrasena { get; set; } = string.Empty;
-        [ForeignKey(nameof(Rol))]
-        public int Id_Rol { get; set; }
-        public Rol Rol
+        public string Token { get; set; } = string.Empty;
+        public DateTime ExpiryDate
         {
             get; set;
         }
+        public int UsuarioId
+        {
+            get; set;
+        }
+        public Usuario Usuario { get; set; } = null!;
+        public bool IsRevoked { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public int CreatedBy
         {

@@ -7,6 +7,7 @@ namespace tablero_api.Repositories.Interfaces
         Task<Usuario?> GetUserWithRoleAsync(string nombre, string contrasena);
 
         Task<Usuario?> GetByUsernameAsync(string nombre);
+        Task<Usuario?> GetByIdAsync(int id);
         Task AddAsync(Usuario usuario);
     }
 }

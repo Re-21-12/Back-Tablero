@@ -8,7 +8,6 @@ namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class TableroController : ControllerBase
     {
         private readonly IService<Partido> _partidoService;
