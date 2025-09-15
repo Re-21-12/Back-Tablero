@@ -28,8 +28,8 @@ namespace tablero_api.Controllers
                 j.Nombre,
                 j.Apellido,
                 j.Edad,
-                j.Equipo.id_Equipo
-                ));
+                j.id_Equipo
+            ));
             return Ok(dto);
         }
 
@@ -44,7 +44,7 @@ namespace tablero_api.Controllers
                 jugador.Nombre,
                 jugador.Apellido,
                 jugador.Edad,
-                jugador.Equipo.id_Equipo
+                jugador.id_Equipo
                 );
             return Ok(dto);
         }
