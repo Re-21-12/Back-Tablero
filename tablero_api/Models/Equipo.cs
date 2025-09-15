@@ -8,6 +8,8 @@
         }
         public string Nombre { get; set; } = string.Empty;
         public int id_Localidad{ get; set; }
+        public string? url_imagen { get; set; }
+
         public Localidad Localidad { get; set; } = null!;
         public ICollection<Jugador> Jugadores { get; set; } = [];
 

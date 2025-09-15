@@ -57,6 +57,20 @@ namespace tablero_api.Controllers
             await _service.CreateAsync(equipo);
             return Ok("Equipo agregado");
         }
+
+        [HttpPatch]
+        public async Task<IActionResult> Patch([FromBody] EquipoImageDto dto)
+        {
+            var equipo = await _service.GetByIdAsync(dto.id_Equipo);
+            {
+                equipo.url_imagen = dto.url;
+            }
+            await _service.UpdateAsync(equipo);
+            {
+                return Ok("Imagen agregada");
+            }
+        }
+        
         [HttpPut]
         public async Task<IActionResult> Put(int id, [FromBody] UpdateEquipoDto? equipoDto)
         {
