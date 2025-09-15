@@ -80,5 +80,36 @@ namespace tablero_api.Controllers
             var creado = await _partidoService.CreateAsync(partido);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Partido }, new { id = creado.id_Partido });
         }
+
+        [HttpPut ("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody]  UpdatePartidoDto partidoDto)
+        {
+            var partido = await _partidoService.GetByIdAsync(id);
+            if (partido == null)
+                return BadRequest("ID no encontrado");
+
+            var mapPartido = new Partido
+            {
+             
+                FechaHora = partidoDto.FechaHora,
+                id_Local = partidoDto.id_Local,
+                id_Visitante = partidoDto.id_visitante
+            };
+
+            var actualizado = await _partidoService.UpdateAsync(mapPartido);
+            return Ok("Partido Actualizado");
+
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var partido = await _partidoService.GetByIdAsync(id);
+                if (partido == null)
+                return NotFound();
+
+            await _partidoService.DeleteAsync(id);
+            return Ok("Partido eliminado");
+        }
     }
 }

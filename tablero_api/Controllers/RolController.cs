@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
 using tablero_api.Services.Interfaces;
@@ -41,12 +42,19 @@ namespace tablero_api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Rol rol)
+        public async Task<IActionResult> Put(int id, [FromBody] Rol roldto)
         {
-            if (id != rol.Id_Rol)
+            var rol = _service.GetByIdAsync(id);
+            if (rol == null)
                 return BadRequest("El ID no coincide");
 
-            var actualizado = await _service.UpdateAsync(rol);
+            var Maprol = new Rol()
+            {
+                Id_Rol = id,
+                Nombre = roldto.Nombre
+            };
+
+            var actualizado = await _service.UpdateAsync(Maprol);
             return Ok(actualizado);
         }
 

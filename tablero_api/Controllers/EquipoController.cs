@@ -45,5 +45,33 @@ namespace tablero_api.Controllers
             await _service.CreateAsync(equipo);
             return Ok("Equipo agregado");
         }
+        [HttpPut]
+        public async Task<IActionResult> Put(int id, [FromBody] UpdateEquipoDto? equipoDto)
+        {
+            var equipo = await _service.GetByIdAsync(id);
+            if (equipo == null)
+                return BadRequest("ID no encontrado");
+
+            var mapEquipo = new Equipo()
+            {
+                id_Equipo = id,
+                Nombre = equipoDto.Nombre,
+                id_Localidad = equipoDto.id_Localidad
+            }; 
+
+            var actualizado = await _service.UpdateAsync(mapEquipo);
+                return Ok(actualizado);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var equipo = await _service.GetByIdAsync(id);
+            if (equipo == null)
+                return NotFound();
+            await _service.DeleteAsync(id);
+            return Ok("Jugador eliminado");
+        }
+
     }
 }

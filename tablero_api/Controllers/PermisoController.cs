@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
+using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Controllers
@@ -41,12 +42,19 @@ namespace tablero_api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Permiso permiso)
+        public async Task<IActionResult> Put(int id, [FromBody] PermisoDto permisodto)
         {
-            if (id != permiso.Id_Permiso)
+            var permiso = await _service.GetByIdAsync(id);
+            if (permiso == null) 
                 return BadRequest("El ID no coincide");
 
-            var actualizado = await _service.UpdateAsync(permiso);
+            var mapPermiso = new Permiso()
+            {
+                Id_Permiso = id,
+                Nombre = permisodto.Nombre
+            };
+
+            var actualizado = await _service.UpdateAsync(mapPermiso);
             return Ok(actualizado);
         }
 
