@@ -1,6 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
@@ -14,12 +15,14 @@ namespace tablero_api.Services
         IUsuarioRepository usuarioRepository,
         IService<Rol> rolRepository,
         IConfiguration config,
-        CryptoHelper cryptoHelper
-        ): IAuthService
+        CryptoHelper cryptoHelper,
+        IService<RefreshToken> refreshTokenRepository
+        ) : IAuthService
     {
         private readonly IUsuarioRepository _usuarioRepository= usuarioRepository;
         private readonly IConfiguration _config = config;
         private readonly IService<Rol> _rolRepository = rolRepository;
+        private readonly IService <RefreshToken> _refreshToken = refreshTokenRepository;
         private readonly CryptoHelper _cryptoHelper = cryptoHelper;
 
         public async Task<LoginResponseDto?> AuthenticateAsync(LoginRequestDto request)
@@ -34,9 +37,16 @@ namespace tablero_api.Services
                 //Esto es por que en el repository se usa el includes para buscar y eso facilita la inclusion
                 nombreRol = usuario.Rol.Nombre;
             }
+            var refreshToken = new RefreshToken
+            {
+                Token = GenerateRefreshToken(),
+                ExpiryDate = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+            };
+            await _refreshToken.CreateAsync(refreshToken);
             RolDto rolDto = new(nombreRol);
 
-            return new LoginResponseDto(token, usuario.Nombre, rolDto);
+            return new LoginResponseDto(token, usuario.Nombre, rolDto, refreshToken.Token);
             
         }
         private string GenerateJwtToken(Usuario usuario)
@@ -66,6 +76,34 @@ namespace tablero_api.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        private string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        }
+        public async Task<RefreshResponseDto> Refresh(RefreshRequestDto request)
+        {
+            RefreshToken existingToken = await _refreshToken.GetByPredicateAsync(rt => rt.Token == request.RefreshToken);
+            if (existingToken == null || existingToken.ExpiryDate < DateTime.UtcNow)
+            {
+                throw new SecurityTokenException("Invalid or expired refresh token");
+            }
+
+            var usuario = await _usuarioRepository.GetByIdAsync(existingToken.UsuarioId);
+            if (usuario == null)
+            {
+                throw new SecurityTokenException("Invalid refresh token");
+            }
+            var newJwtToken = GenerateJwtToken(usuario);
+            var newRefreshToken = new RefreshToken
+            {
+                Token = GenerateRefreshToken(),
+                ExpiryDate = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+            };
+            await _refreshToken.CreateAsync(newRefreshToken);
+            await _refreshToken.DeleteAsync(existingToken.Id);
+            return new RefreshResponseDto(newJwtToken, newRefreshToken.Token);
         }
         public async Task<string?> RegisterAsync(RegisterRequestDto request)
         {

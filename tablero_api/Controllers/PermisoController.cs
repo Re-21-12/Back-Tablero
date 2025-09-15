@@ -35,8 +35,12 @@ namespace tablero_api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Permiso permiso)
+        public async Task<IActionResult> Post([FromBody] PermisoDto permisoDto)
         {
+            var permiso = new Permiso()
+            {
+                Nombre = permisoDto.Nombre
+            };
             var creado = await _service.CreateAsync(permiso);
             return CreatedAtAction(nameof(Get), new { id = creado.Id_Permiso }, creado);
         }

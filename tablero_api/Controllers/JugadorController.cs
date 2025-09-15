@@ -35,8 +35,14 @@ namespace tablero_api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Jugador jugador)
+        public async Task<IActionResult> Post([FromBody] JugadorDto jugadorDto)
         {
+            var jugador = new Jugador()
+            {
+                Nombre = jugadorDto.Nombre,
+                Edad = jugadorDto.Edad,
+                id_Equipo = jugadorDto.id_Equipo
+            };
             var creado = await _service.CreateAsync(jugador);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Jugador }, creado);
         }

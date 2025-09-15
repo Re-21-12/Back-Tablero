@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using System.Data;
 using tablero_api.Models;
 
@@ -23,7 +24,7 @@ namespace tablero_api.Data
         public DbSet<Rol> Roles => Set<Rol>();
         public DbSet<Jugador> Jugadores => Set<Jugador>();
 
-
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // --- Partido ---
@@ -95,5 +96,6 @@ namespace tablero_api.Data
                     .UsingEntity(j => j.ToTable("RolPermisos"));
 
         }
+
     }
 }

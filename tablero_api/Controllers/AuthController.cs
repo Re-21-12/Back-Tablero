@@ -30,5 +30,13 @@ namespace tablero_api.Controllers
             return Ok(new { message = result });
         }
 
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto request)
+        {
+            var response = await _authService.Refresh(request);
+            if (response == null)
+                return Unauthorized("Invalid refresh token");
+            return Ok(response);
+        }
     }
 }
