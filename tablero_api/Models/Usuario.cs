@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace tablero_api.Models
 {
@@ -13,6 +14,7 @@ namespace tablero_api.Models
         public string Nombre { get; set; } = string.Empty;
         [Required]
         public string Contrasena { get; set; } = string.Empty;
+        [ForeignKey(nameof(Rol))]
         public int Id_Rol { get; set; }
         public Rol Rol
         {

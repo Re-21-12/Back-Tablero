@@ -42,6 +42,8 @@ namespace tablero_api.Services
                 Token = GenerateRefreshToken(),
                 ExpiryDate = DateTime.UtcNow.AddDays(7),
                 CreatedAt = DateTime.UtcNow,
+                UsuarioId = usuario.Id_Usuario,
+                IsRevoked = false
             };
             await _refreshToken.CreateAsync(refreshToken);
             RolDto rolDto = new(nombreRol);
