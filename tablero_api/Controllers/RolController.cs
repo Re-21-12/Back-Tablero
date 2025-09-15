@@ -10,6 +10,7 @@ namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class RolController : ControllerBase
     {
         private readonly IService<Rol> _rolService;

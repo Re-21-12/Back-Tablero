@@ -102,6 +102,8 @@ namespace tablero_api.Services
                 Token = GenerateRefreshToken(),
                 ExpiryDate = DateTime.UtcNow.AddDays(7),
                 CreatedAt = DateTime.UtcNow,
+                UsuarioId = usuario.Id_Usuario,
+                IsRevoked = false
             };
             await _refreshToken.CreateAsync(newRefreshToken);
             await _refreshToken.DeleteAsync(existingToken.Id);
@@ -117,12 +119,12 @@ namespace tablero_api.Services
             if (rol == null)
                 return null;
 
-            var ontrasenaCifrada = BCrypt.Net.BCrypt.HashPassword(request.Contrasena);
+            var contrasenaCifrada = BCrypt.Net.BCrypt.HashPassword(request.Contrasena);
 
             var usuario = new Usuario
             {
                 Nombre = request.Nombre,
-                Contrasena = ontrasenaCifrada,
+                Contrasena = contrasenaCifrada,
                 Id_Rol = rol.Id_Rol
             };
 
