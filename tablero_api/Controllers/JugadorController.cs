@@ -19,38 +19,38 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreatedJugadorDto>>> Get()
+        public async Task<ActionResult<IEnumerable<CreateJugadorDto>>> Get()
         {
 
             var jugadores = await _service.GetAllAsync();
 
-            var dto = jugadores.Select(j => new CreatedJugadorDto(
+            var dto = jugadores.Select(j => new CreateJugadorDto(
                 j.Nombre,
                 j.Apellido,
                 j.Edad,
-                j.Equipo?.Nombre ?? string.Empty
+                j.Equipo.id_Equipo
                 ));
             return Ok(dto);
         }
 
             [HttpGet("{id}")]
-        public async Task<ActionResult<CreatedJugadorDto>> Get(int id)
+        public async Task<ActionResult<CreateJugadorDto>> Get(int id)
         {
             var jugador = await _service.GetByIdAsync(id);
             if (jugador == null)
                 return NotFound();
 
-            var dto = new CreatedJugadorDto(
+            var dto = new CreateJugadorDto(
                 jugador.Nombre,
                 jugador.Apellido,
                 jugador.Edad,
-                jugador.Equipo?.Nombre ?? string.Empty
+                jugador.Equipo.id_Equipo
                 );
             return Ok(dto);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] JugadorDto jugador)
+        public async Task<IActionResult> Post([FromBody] CreateJugadorDto jugador)
         {
             var dto = new Jugador
             {
@@ -65,7 +65,7 @@ namespace tablero_api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] JugadorDto jugadorDto)
+        public async Task<IActionResult> Put(int id, [FromBody] CreateJugadorDto jugadorDto)
         { 
 
             var jugador = await _service.GetByIdAsync(id);
@@ -77,6 +77,7 @@ namespace tablero_api.Controllers
             {
                 id_Jugador = id,
                 Nombre = jugadorDto.Nombre,
+                Apellido = jugadorDto.Apellido,
                 Edad = jugadorDto.Edad,
                 id_Equipo = jugadorDto.id_Equipo
 

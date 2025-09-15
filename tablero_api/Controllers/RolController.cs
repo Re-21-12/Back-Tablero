@@ -3,10 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
-<<<<<<< HEAD
-=======
-using tablero_api.Services;
->>>>>>> origin/stable
 using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Controllers
@@ -29,16 +25,8 @@ namespace tablero_api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RolDto>>> Get()
         {
-<<<<<<< HEAD
-            var roles = await _service.GetAllAsync();
-            var dto = roles.Select(r => new RolDto(
-                r.Nombre
-                ));
-            return Ok(dto);
-=======
             var roles = await _rolService.GetAllAsync();
             return Ok(roles);
->>>>>>> origin/stable
         }
 
         [HttpGet("{id}")]
@@ -55,18 +43,6 @@ namespace tablero_api.Controllers
         }
 
         [HttpPost]
-<<<<<<< HEAD
-        public async Task<IActionResult> Post([FromBody] RolDto rol)
-        {
-            
-                var roldto = new Rol
-                {
-                    Nombre = rol.Nombre
-
-                };
-
-                var creado = await _service.CreateAsync(roldto);
-=======
         public async Task<IActionResult> Post([FromBody] RolDto rolDto)
         {
             var rol = new Rol()
@@ -74,7 +50,6 @@ namespace tablero_api.Controllers
                 Nombre = rolDto.Nombre
             };
             var creado = await _rolService.CreateAsync(rol);
->>>>>>> origin/stable
             return CreatedAtAction(nameof(Get), new { id = creado.Id_Rol }, creado);
         }
 
