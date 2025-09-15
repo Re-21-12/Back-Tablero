@@ -18,19 +18,31 @@ namespace tablero_api.Controllers
             _service = service;
         }
 
+
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Equipo>>> Get()
+        public async Task<ActionResult<IEnumerable<EquipoDto>>>Get()
         {
             var equipos = await _service.GetAllAsync();
-            return Ok(equipos);
+
+            var dto = equipos.Select(e => new EquipoDto(
+                e.Nombre,
+                e.Localidad?.Nombre ?? string.Empty
+                ));
+            return Ok(dto);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Equipo>> Get(int id)
+        public async Task<ActionResult<EquipoDto>> Get(int id)
         {
             var equipo = await _service.GetByIdAsync(id);
             if (equipo == null)
                 return NotFound();
+
+            var dto = new EquipoDto
+            (
+                equipo.Nombre,
+                equipo.Localidad?.Nombre ?? string.Empty
+            );
             return Ok(equipo);
         }
 
@@ -54,7 +66,6 @@ namespace tablero_api.Controllers
 
             var mapEquipo = new Equipo()
             {
-                id_Equipo = id,
                 Nombre = equipoDto.Nombre,
                 id_Localidad = equipoDto.id_Localidad
             }; 

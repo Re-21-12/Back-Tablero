@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
+using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Controllers
@@ -19,30 +20,44 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Rol>>> Get()
+        public async Task<ActionResult<IEnumerable<RolDto>>> Get()
         {
             var roles = await _service.GetAllAsync();
-            return Ok(roles);
+            var dto = roles.Select(r => new RolDto(
+                r.Nombre
+                ));
+            return Ok(dto);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Rol>> Get(int id)
+        public async Task<ActionResult<RolDto>> Get(int id)
         {
             var rol = await _service.GetByIdAsync(id);
             if (rol == null)
                 return NotFound();
-            return Ok(rol);
+
+            var roldto = new RolDto(
+                rol.Nombre
+                );
+            return Ok(roldto);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Rol rol)
+        public async Task<IActionResult> Post([FromBody] RolDto rol)
         {
-            var creado = await _service.CreateAsync(rol);
+            
+                var roldto = new Rol
+                {
+                    Nombre = rol.Nombre
+
+                };
+
+                var creado = await _service.CreateAsync(roldto);
             return CreatedAtAction(nameof(Get), new { id = creado.Id_Rol }, creado);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Rol roldto)
+        public async Task<IActionResult> Put(int id, [FromBody] RolDto roldto)
         {
             var rol = _service.GetByIdAsync(id);
             if (rol == null)

@@ -19,26 +19,41 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Permiso>>> Get()
+        public async Task<ActionResult<IEnumerable<PermisoDto>>> Get()
         {
             var permisos = await _service.GetAllAsync();
-            return Ok(permisos);
+            var dto = permisos.Select(p => new PermisoDto(
+                p.Nombre
+                ));
+           
+            return Ok(dto);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Permiso>> Get(int id)
+        public async Task<ActionResult<PermisoDto>> Get(int id)
         {
             var permiso = await _service.GetByIdAsync(id);
             if (permiso == null)
                 return NotFound();
-            return Ok(permiso);
+            var dto = new PermisoDto
+            (
+               permiso.Nombre
+            );
+            return Ok(dto);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Permiso permiso)
+        public async Task<IActionResult> Post([FromBody] PermisoDto permiso)
         {
-            var creado = await _service.CreateAsync(permiso);
-            return CreatedAtAction(nameof(Get), new { id = creado.Id_Permiso }, creado);
+            {
+                var dto = new Permiso
+                {
+                    Nombre = permiso.Nombre
+
+                };
+                var creado = await _service.CreateAsync(dto);
+                return CreatedAtAction(nameof(Get), new { id = creado.Id_Permiso }, creado);
+            }
         }
 
         [HttpPut("{id}")]

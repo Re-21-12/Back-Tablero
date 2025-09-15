@@ -19,30 +19,53 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Jugador>>> Get()
+        public async Task<ActionResult<IEnumerable<CreatedJugadorDto>>> Get()
         {
+
             var jugadores = await _service.GetAllAsync();
-            return Ok(jugadores);
+
+            var dto = jugadores.Select(j => new CreatedJugadorDto(
+                j.Nombre,
+                j.Apellido,
+                j.Edad,
+                j.Equipo?.Nombre ?? string.Empty
+                ));
+            return Ok(dto);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Jugador>> Get(int id)
+            [HttpGet("{id}")]
+        public async Task<ActionResult<CreatedJugadorDto>> Get(int id)
         {
             var jugador = await _service.GetByIdAsync(id);
             if (jugador == null)
                 return NotFound();
-            return Ok(jugador);
+
+            var dto = new CreatedJugadorDto(
+                jugador.Nombre,
+                jugador.Apellido,
+                jugador.Edad,
+                jugador.Equipo?.Nombre ?? string.Empty
+                );
+            return Ok(dto);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] Jugador jugador)
+        public async Task<IActionResult> Post([FromBody] JugadorDto jugador)
         {
-            var creado = await _service.CreateAsync(jugador);
+            var dto = new Jugador
+            {
+                Nombre = jugador.Nombre,
+                Apellido = jugador.Apellido,
+                Edad = jugador.Edad,
+                id_Equipo = jugador.id_Equipo
+
+            };
+            var creado = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Jugador }, creado);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] UpdateJugadorDto? jugadorDto)
+        public async Task<IActionResult> Put(int id, [FromBody] JugadorDto jugadorDto)
         { 
 
             var jugador = await _service.GetByIdAsync(id);

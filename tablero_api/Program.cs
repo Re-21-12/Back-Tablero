@@ -40,7 +40,7 @@ namespace tablero_api
 
             // EF Core + SQL Server
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection1")));
 
 
             // Dependencias
