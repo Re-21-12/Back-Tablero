@@ -12,6 +12,13 @@ namespace tablero_api.Models
         public string Nombre { get; set; } = string.Empty;
 
         public string Apellido { get; set; } = string.Empty;
+        public int Numero_jugador { get; set; }
+
+        public string Posicion { get; set; } = string.Empty;
+        public float Estatura { get; set; }
+        public string? Nacionalidad { get; set; }
+        
+
         public int Edad
         {
             get; set;

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tablero_api.Data;
 
@@ -11,9 +12,11 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250916013834_JugadorAmplificado")]
+    partial class JugadorAmplificado
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,12 +138,6 @@ namespace tablero_api.Migrations
                     b.Property<int>("Edad")
                         .HasColumnType("int");
 
-                    b.Property<float>("Estatura")
-                        .HasColumnType("real");
-
-                    b.Property<string>("Nacionalidad")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -157,6 +154,9 @@ namespace tablero_api.Migrations
 
                     b.Property<int>("UpdatedBy")
                         .HasColumnType("int");
+
+                    b.Property<float>("estatura")
+                        .HasColumnType("real");
 
                     b.Property<int>("id_Equipo")
                         .HasColumnType("int");

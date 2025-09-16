@@ -98,5 +98,27 @@ namespace tablero_api.Controllers
             return Ok("Jugador eliminado");
         }
 
+        
+        [HttpGet("Paginado")]
+        public async Task<Pagina<EquipoDto>> GetEquiposAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
+        {
+            var todos = await _service.GetAllAsync();
+            var equipos = await _service.GetValuePerPage(pagina, tamanio);
+            List<EquipoDto> eq = new List<EquipoDto>();
+
+            foreach (Equipo i in equipos)
+            {
+                eq.Add(new EquipoDto(i.Nombre, i.Localidad?.Nombre ?? string.Empty));
+            }
+
+            return new Pagina<EquipoDto>
+            {
+                Items = eq,
+                PaginaActual = pagina,
+                TotalPaginas = (int)Math.Ceiling(todos.Count() / (double)tamanio),
+                TotalRegistros = todos.Count()
+            };
+        }
+        
     }
 }

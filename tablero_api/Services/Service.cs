@@ -49,5 +49,10 @@ namespace tablero_api.Services
         {
             return await _repository.GetByPredicateAsync(predicate);
         }
+
+        public async Task<List<T>> GetValuePerPage(int pageNumber, int pageSize)
+        {
+            return await _repository.GetValuePerPage(pageNumber, pageSize);
+        }
     }
 }
