@@ -103,5 +103,27 @@ namespace tablero_api.Controllers
             await _service.DeleteAsync(id);
             return NoContent();
         }
+
+
+        [HttpGet("Paginado")]
+        public async Task<Pagina<LocalidadDto>> GetLocalidadAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
+        {
+            var todos = await _service.GetAllAsync();
+            var localidades = await _service.GetValuePerPage(pagina, tamanio);
+            List<LocalidadDto> lc = new List<LocalidadDto>();
+
+            foreach (Localidad i in localidades)
+            {
+                lc.Add(new LocalidadDto(i.Nombre));
+            }
+
+            return new Pagina<LocalidadDto>
+            {
+                Items = lc,
+                PaginaActual = pagina,
+                TotalPaginas = (int)Math.Ceiling(todos.Count() / (double)tamanio),
+                TotalRegistros = todos.Count()
+            };
+        }
     }
 }

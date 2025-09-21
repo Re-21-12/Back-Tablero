@@ -46,9 +46,9 @@ namespace tablero_api.Services
                 IsRevoked = false
             };
             await _refreshToken.CreateAsync(refreshToken);
-            RolDto rolDto = new(nombreRol);
+            RolDto rolDto = new(usuario.Id_Rol, nombreRol);
 
-            return new LoginResponseDto(token, usuario.Nombre, rolDto, refreshToken.Token);
+            return new LoginResponseDto(token, Convert.ToInt32(_config["Jwt:ExpiresInMinutes"]) , usuario.Nombre, rolDto, refreshToken.Token);
             
         }
         private string GenerateJwtToken(Usuario usuario)
@@ -131,6 +131,7 @@ namespace tablero_api.Services
             await _usuarioRepository.AddAsync(usuario);
             return "Usuario registrado correctamente.";
         }
+
 
     }
 }

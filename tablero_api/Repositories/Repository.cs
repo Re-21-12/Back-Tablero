@@ -63,5 +63,15 @@ namespace tablero_api.Repositories
         {
             return await _context.Set<T>().FirstOrDefaultAsync(predicate);
         }
+
+        public async Task<List<T>> GetValuePerPage(int pageNumber, int pageSize)
+        {
+          
+            return await _context.Set<T>()
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+        }
     }
 }

@@ -12,12 +12,13 @@ namespace tablero_api.Controllers
     public class JugadorController : ControllerBase
     {
         private readonly IService<Jugador> _service;
+        private readonly IService<Equipo> _EquipoService;
 
         public JugadorController(IService<Jugador> service)
         {
             _service = service;
         }
-
+        
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CreateJugadorDto>>> Get()
         {
@@ -27,6 +28,10 @@ namespace tablero_api.Controllers
             var dto = jugadores.Select(j => new CreateJugadorDto(
                 j.Nombre,
                 j.Apellido,
+                j.Estatura,
+                j.Nacionalidad,
+                j.Posicion,
+                
                 j.Edad,
                 j.id_Equipo
             ));
@@ -43,12 +48,16 @@ namespace tablero_api.Controllers
             var dto = new CreateJugadorDto(
                 jugador.Nombre,
                 jugador.Apellido,
+                jugador.Estatura,
+                jugador.Posicion,
+                jugador.Nacionalidad,
+                
                 jugador.Edad,
                 jugador.id_Equipo
                 );
             return Ok(dto);
         }
-
+        
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreateJugadorDto jugador)
         {
@@ -56,6 +65,8 @@ namespace tablero_api.Controllers
             {
                 Nombre = jugador.Nombre,
                 Apellido = jugador.Apellido,
+                Nacionalidad = jugador.Nacionalidad,
+
                 Edad = jugador.Edad,
                 id_Equipo = jugador.id_Equipo
 
@@ -97,5 +108,28 @@ namespace tablero_api.Controllers
             await _service.DeleteAsync(id);
             return Ok("Jugador eliminado");
         }
+        
+        [HttpGet("Paginado")]
+        public async Task<Pagina<JugadorPaginaDto>> GetLocalidadAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
+        {
+            var todos = await _service.GetAllAsync();
+            var jugadores = await _service.GetValuePerPage(pagina, tamanio);
+            List<JugadorPaginaDto> jg = new List<JugadorPaginaDto>();
+
+            foreach (Jugador j in jugadores)
+            {
+                var eq = await _EquipoService.GetByIdAsync(j.id_Equipo);
+                jg.Add(new JugadorPaginaDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, eq.Nombre));
+            }
+
+            return new Pagina<JugadorPaginaDto>
+            {
+                Items = jg,
+                PaginaActual = pagina,
+                TotalPaginas = (int)Math.Ceiling(todos.Count() / (double)tamanio),
+                TotalRegistros = todos.Count()
+            };
+        }
+        
     }
 }

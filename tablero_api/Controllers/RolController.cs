@@ -37,6 +37,7 @@ namespace tablero_api.Controllers
                 return NotFound();
 
             var roldto = new RolDto(
+                rol.Id_Rol,
                 rol.Nombre
                 );
             return Ok(roldto);

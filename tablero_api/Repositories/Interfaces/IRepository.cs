@@ -11,6 +11,7 @@ namespace tablero_api.Repositories.Interfaces
         Task DeleteAsync(int id);
         Task<IEnumerable<T>> GetByTwoParameters(int firstParam, int twoParam);
         Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate);
+        Task<List<T>> GetValuePerPage(int pageNumber, int pageSize);
 
     }
 
