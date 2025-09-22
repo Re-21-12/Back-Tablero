@@ -37,7 +37,15 @@ namespace tablero_api.Controllers
             ));
             return Ok(result);
         }
+        [HttpGet("/Paginado")]
+        public async Task<ActionResult<IEnumerable<PartidoDto>>> GetPartidosPerPage([FromQuery] int pagina, [FromQuery] int tamanio)
+        {
+            var partidos = await _partidoService.GetAllAsync();
 
+
+            var result = await _partidoService.GetValuePerPage(pagina, tamanio);
+            return Ok(result);
+        }
         [HttpGet("{id}")]
         public async Task<ActionResult<PartidoDto>> Get(int id)
         {
