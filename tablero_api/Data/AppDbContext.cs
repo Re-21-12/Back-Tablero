@@ -7,24 +7,19 @@ namespace tablero_api.Data
 {
     public class AppDbContext : DbContext
     {
-        
-
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Cuarto> Cuartos => Set<Cuarto>();
-
         public DbSet<Equipo> Equipos => Set<Equipo>();
         public DbSet<Partido> Partidos => Set<Partido>();
-
         public DbSet<Localidad> Localidades => Set<Localidad>();
-
         public DbSet<Imagen> Imagenes => Set<Imagen>();
         public DbSet<Usuario> Usuarios => Set<Usuario>();
         public DbSet<Permiso> Permisos => Set<Permiso>();
         public DbSet<Rol> Roles => Set<Rol>();
         public DbSet<Jugador> Jugadores => Set<Jugador>();
-
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // --- Partido ---
@@ -89,13 +84,26 @@ namespace tablero_api.Data
             modelBuilder.Entity<Imagen>()
                 .HasKey(i => i.id_Imagen);
 
-            // -- Roles -- 
+            // --- Relación Rol-Permiso (UNO a MUCHOS) ---
             modelBuilder.Entity<Rol>()
-                    .HasMany(r => r.Permisos)
-                    .WithMany(p => p.Roles)
-                    .UsingEntity(j => j.ToTable("RolPermisos"));
+                .HasMany(r => r.Permisos)
+                .WithOne(p => p.Rol)
+                .HasForeignKey(p => p.Id_Rol)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            // --- Usuario-Rol ---
+            modelBuilder.Entity<Usuario>()
+                .HasOne(u => u.Rol)
+                .WithMany(r => r.Usuarios)
+                .HasForeignKey(u => u.Id_Rol)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // --- RefreshToken-Usuario ---
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.Usuario)
+                .WithMany()
+                .HasForeignKey(rt => rt.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
-
     }
 }
