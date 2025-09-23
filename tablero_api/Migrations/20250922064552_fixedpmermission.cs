@@ -26,6 +26,8 @@ namespace tablero_api.Migrations
                     { 8, "Usuario", DateTime.UtcNow, 0, null, 0 },
                     { 9, "Rol", DateTime.UtcNow, 0, null, 0 },
                     { 10, "Permiso", DateTime.UtcNow, 0, null, 0   },
+                    { 11, "Cliente", DateTime.UtcNow, 0, null, 0   },
+
                 }
             );
 
@@ -118,18 +120,23 @@ namespace tablero_api.Migrations
                     { 57, "Imagen:Editar", DateTime.UtcNow, 7, 0, null, 0 },
                     { 58, "Imagen:Eliminar", DateTime.UtcNow, 7, 0, null, 0 },
                     { 59, "Imagen:Consultar", DateTime.UtcNow, 7, 0, null, 0 },
-                    {60, "Usuario: Agregar", DateTime.UtcNow,8, 0, null, 0 },
-                    {61, "Usuario: Editar", DateTime.UtcNow, 8, 0, null, 0 },
-                    {62, "Usuario: Eliminar", DateTime.UtcNow, 8, 0, null, 0 },
-                    {63, "Usuario: Consultar", DateTime.UtcNow, 8, 0, null, 0 },
-                    {64, "Rol: Agregar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {65, "Rol: Editar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {66, "Rol: Eliminar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {67, "Rol: Consultar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {68, "Permiso: Agregar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {69, "Permiso: Editar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {70, "Permiso: Eliminar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {71, "Permiso: Consultar", DateTime.UtcNow, 10, 0, null, 0 }
+                    {60, "Usuario:Agregar", DateTime.UtcNow,8, 0, null, 0 },
+                    {61, "Usuario:Editar", DateTime.UtcNow, 8, 0, null, 0 },
+                    {62, "Usuario:Eliminar", DateTime.UtcNow, 8, 0, null, 0 },
+                    {63, "Usuario:Consultar", DateTime.UtcNow, 8, 0, null, 0 },
+                    {64, "Rol:Agregar", DateTime.UtcNow, 9, 0, null, 0 },
+                    {65, "Rol:Editar", DateTime.UtcNow, 9, 0, null, 0 },
+                    {66, "Rol:Eliminar", DateTime.UtcNow, 9, 0, null, 0 },
+                    {67, "Rol:Consultar", DateTime.UtcNow, 9, 0, null, 0 },
+                    {68, "Permiso:Agregar", DateTime.UtcNow, 10, 0, null, 0 },
+                    {69, "Permiso:Editar", DateTime.UtcNow, 10, 0, null, 0 },
+                    {70, "Permiso:Eliminar", DateTime.UtcNow, 10, 0, null, 0 },
+                    {71, "Permiso:Consultar", DateTime.UtcNow, 10, 0, null, 0 },
+                    {72, "Permiso:Consultar", DateTime.UtcNow, 11, 0, null,0 },
+                    {73, "Localidad:Consultar", DateTime.UtcNow, 11, 0, null,0 },
+                    {74, "Equipo:Consultar", DateTime.UtcNow, 11, 0, null,0 },
+                    {75, "Imagen:Consultar", DateTime.UtcNow, 11, 0, null,0 }
+
                 }
             );
 
