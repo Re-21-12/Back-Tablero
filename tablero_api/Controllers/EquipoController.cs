@@ -26,7 +26,7 @@ namespace tablero_api.Controllers
 
             var dto = equipos.Select(e => new EquipoDto(
                 e.Nombre,
-                e.Localidad?.Nombre ?? string.Empty
+                e.id_Localidad
                 ));
             return Ok(dto);
         }
@@ -41,7 +41,7 @@ namespace tablero_api.Controllers
             var dto = new EquipoDto
             (
                 equipo.Nombre,
-                equipo.Localidad?.Nombre ?? string.Empty
+                equipo.id_Localidad
             );
             return Ok(equipo);
         }
@@ -108,7 +108,7 @@ namespace tablero_api.Controllers
 
             foreach (Equipo i in equipos)
             {
-                eq.Add(new EquipoDto(i.Nombre, i.Localidad?.Nombre ?? string.Empty));
+                eq.Add(new EquipoDto(i.Nombre, i.id_Localidad));
             }
 
             return new Pagina<EquipoDto>

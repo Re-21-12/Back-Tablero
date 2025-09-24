@@ -74,29 +74,23 @@ namespace tablero_api.Controllers
             var creado = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Jugador }, creado);
         }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] CreateJugadorDto jugadorDto)
-        { 
-
-            var jugador = await _service.GetByIdAsync(id);
-            if(jugador == null) 
-
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> AsignTeamAsync(int id, [FromBody] JugadorAsignarDto jugadorAsignarDto)
+        {
+            if (id != jugadorAsignarDto.id_Jugador)
                 return BadRequest("El ID no coincide");
 
-            var mapJugador = new Jugador()
-            {
-                id_Jugador = id,
-                Nombre = jugadorDto.Nombre,
-                Apellido = jugadorDto.Apellido,
-                Edad = jugadorDto.Edad,
-                id_Equipo = jugadorDto.id_Equipo
+            var jugador = await _service.GetByIdAsync(id);
+            if (jugador == null)
+                return NotFound();
 
-            };
+            jugador.id_Equipo = jugadorAsignarDto.Id_Equipo;
 
-            var actualizado = await _service.UpdateAsync(mapJugador);
+            var actualizado = await _service.UpdateAsync(jugador);
             return Ok(actualizado);
         }
+
+        
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
