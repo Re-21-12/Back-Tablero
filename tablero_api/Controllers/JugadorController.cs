@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using tablero_api.Migrations;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
@@ -19,7 +20,24 @@ namespace tablero_api.Controllers
             _service = service;
             _EquipoService = equipoService;
         }
-        
+        [HttpGet("byTeam/{id_equipo}")]
+        public async Task<ActionResult<IEnumerable<JugadorDto>>> GetByTeam(int id_equipo)
+        {
+            var equipo = await _EquipoService.GetByIdAsync(id_equipo);
+            var jugadores = await _service.GetAllAsync();
+            List<JugadorDto> ret = new List<JugadorDto>();
+            foreach(Jugador j in jugadores){
+                if(j.id_Equipo == id_equipo)
+                {
+                    ret.Add(new JugadorDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, j.id_Equipo));
+                }
+            }
+
+
+            if (equipo == null)
+                return NotFound("No existe el equipo");
+            return Ok(ret);
+        }
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CreateJugadorDto>>> Get()
         {
