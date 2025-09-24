@@ -23,7 +23,8 @@ namespace tablero_api.Controllers
         {
             var permisos = await _service.GetAllAsync();
             var dto = permisos.Select(p => new PermisoDto(
-                p.Nombre
+                p.Nombre,
+                p.Id_Rol
                 ));
            
             return Ok(dto);
@@ -37,7 +38,8 @@ namespace tablero_api.Controllers
                 return NotFound();
             var dto = new PermisoDto
             (
-               permiso.Nombre
+               permiso.Nombre,
+               permiso.Id_Rol
             );
             return Ok(dto);
         }
@@ -63,7 +65,8 @@ namespace tablero_api.Controllers
             var mapPermiso = new Permiso()
             {
                 Id_Permiso = id,
-                Nombre = permisodto.Nombre
+                Nombre = permisodto.Nombre,
+                Id_Rol = permisodto.Id_Rol
             };
 
             var actualizado = await _service.UpdateAsync(mapPermiso);
