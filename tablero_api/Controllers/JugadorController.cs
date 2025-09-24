@@ -14,9 +14,10 @@ namespace tablero_api.Controllers
         private readonly IService<Jugador> _service;
         private readonly IService<Equipo> _EquipoService;
 
-        public JugadorController(IService<Jugador> service)
+        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService)
         {
             _service = service;
+            _EquipoService = equipoService;
         }
         
         [HttpGet]
@@ -29,16 +30,15 @@ namespace tablero_api.Controllers
                 j.Nombre,
                 j.Apellido,
                 j.Estatura,
-                j.Nacionalidad,
                 j.Posicion,
-                
+                j.Nacionalidad,
                 j.Edad,
                 j.id_Equipo
             ));
             return Ok(dto);
         }
 
-            [HttpGet("{id}")]
+        [HttpGet("{id}")]
         public async Task<ActionResult<CreateJugadorDto>> Get(int id)
         {
             var jugador = await _service.GetByIdAsync(id);
@@ -51,10 +51,9 @@ namespace tablero_api.Controllers
                 jugador.Estatura,
                 jugador.Posicion,
                 jugador.Nacionalidad,
-                
                 jugador.Edad,
                 jugador.id_Equipo
-                );
+            );
             return Ok(dto);
         }
         
@@ -66,10 +65,10 @@ namespace tablero_api.Controllers
                 Nombre = jugador.Nombre,
                 Apellido = jugador.Apellido,
                 Nacionalidad = jugador.Nacionalidad,
-
+                Posicion = jugador.posicion,
+                Estatura = jugador.estatura,
                 Edad = jugador.Edad,
                 id_Equipo = jugador.id_Equipo
-
             };
             var creado = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(Get), new { id = creado.id_Jugador }, creado);
@@ -89,9 +88,11 @@ namespace tablero_api.Controllers
                 id_Jugador = id,
                 Nombre = jugadorDto.Nombre,
                 Apellido = jugadorDto.Apellido,
+                Posicion = jugadorDto.posicion,
+                Estatura = jugadorDto.estatura,
+                Nacionalidad = jugadorDto.Nacionalidad,
                 Edad = jugadorDto.Edad,
                 id_Equipo = jugadorDto.id_Equipo
-
             };
 
             var actualizado = await _service.UpdateAsync(mapJugador);
@@ -119,7 +120,15 @@ namespace tablero_api.Controllers
             foreach (Jugador j in jugadores)
             {
                 var eq = await _EquipoService.GetByIdAsync(j.id_Equipo);
-                jg.Add(new JugadorPaginaDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, eq.Nombre));
+                jg.Add(new JugadorPaginaDto(
+                    j.Nombre, 
+                    j.Apellido, 
+                    j.Estatura,        // Orden correcto: tercera posición
+                    j.Posicion,        // Cuarta posición
+                    j.Nacionalidad, 
+                    j.Edad, 
+                    eq?.Nombre ?? "Desconocido"
+                ));
             }
 
             return new Pagina<JugadorPaginaDto>

@@ -7,5 +7,6 @@ namespace tablero_api.Services.Interfaces
         Task<LoginResponseDto?> AuthenticateAsync(LoginRequestDto request);
         Task<RefreshResponseDto?> Refresh(RefreshRequestDto request);
         Task<string?> RegisterAsync(RegisterRequestDto request);
+
     }
 }
