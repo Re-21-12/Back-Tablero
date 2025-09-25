@@ -92,27 +92,27 @@ namespace tablero_api.Controllers
             return CreatedAtAction(nameof(Get), new { id = creado.id_Jugador }, creado);
         }
         [HttpPatch("{id}")]
-        public async Task<IActionResult> AsignTeamAsync(int id, [FromBody] JugadorAsignarDto jugadorAsignarDto)
+        public async Task<ActionResult<JugadorDto>> AsignTeamAsync(int id, [FromBody] JugadorAsignarDto jugadorDto)
         {
-            if (id != jugadorAsignarDto.id_Jugador)
+            if (id != jugadorDto.id_Jugador)
                 return BadRequest("El ID no coincide");
 
             var jugador = await _service.GetByIdAsync(id);
             if (jugador == null)
                 return NotFound();
 
-            jugador.id_Equipo = jugadorAsignarDto.Id_Equipo;
+            jugador.id_Equipo = jugadorDto.Id_Equipo;
 
             var mapJugador = new Jugador()
             {
                 id_Jugador = id,
-                Nombre = jugadorDto.Nombre,
-                Apellido = jugadorDto.Apellido,
-                Posicion = jugadorDto.posicion,
-                Estatura = jugadorDto.estatura,
-                Nacionalidad = jugadorDto.Nacionalidad,
-                Edad = jugadorDto.Edad,
-                id_Equipo = jugadorDto.id_Equipo
+                Nombre = jugador.Nombre,
+                Apellido = jugador.Apellido,
+                Posicion = jugador.Posicion,
+                Estatura = jugador.Estatura,
+                Nacionalidad = jugador.Nacionalidad,
+                Edad = jugador.Edad,
+                id_Equipo = jugador.id_Equipo
             };
 
             var actualizado = await _service.UpdateAsync(mapJugador);
@@ -141,13 +141,14 @@ namespace tablero_api.Controllers
             {
                 var eq = await _EquipoService.GetByIdAsync(j.id_Equipo);
                 jg.Add(new JugadorPaginaDto(
+                    j.id_Jugador,
                     j.Nombre, 
                     j.Apellido, 
                     j.Estatura,        // Orden correcto: tercera posición
                     j.Posicion,        // Cuarta posición
                     j.Nacionalidad, 
                     j.Edad, 
-                    eq?.Nombre ?? "Desconocido"
+                    j.id_Equipo
                 ));
             }
 

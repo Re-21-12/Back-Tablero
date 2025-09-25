@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
@@ -14,15 +15,53 @@ namespace tablero_api.Controllers
         private readonly IService<Partido> _partidoService;
         private readonly IService<Equipo> _equipoService;
         private readonly IService<Localidad> _localidadService;
+        private readonly IService<Cuarto> _cuartoService;
 
 
-        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice)
+        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice, IService<Cuarto> cuartoService)
         {
             _partidoService = partidoService;
             _equipoService = equipoService;
             _localidadService = localidadSerice;
+            _cuartoService = cuartoService;
 
         }
+        [HttpGet("Resultado")]
+        public async Task<ActionResult<IEnumerable<PartidoResultadoDto>>> GetPartidosConResultado()
+        {
+            var partidos = await _partidoService.GetAllAsync();
+            var cuartos = await _cuartoService.GetAllAsync();
+            var equipos = await _equipoService.GetAllAsync(); // Trae todos de una vez
+
+            var partidoResultados = partidos.Select(p =>
+            {
+                var cuartosPartido = cuartos.Where(c => c.id_Partido == p.id_Partido);
+
+                int total_local = cuartosPartido
+                    .Where(c => c.id_Equipo == p.id_Local)
+                    .Sum(c => c.Total_Punteo);
+
+                int total_visitante = cuartosPartido
+                    .Where(c => c.id_Equipo == p.id_Visitante)
+                    .Sum(c => c.Total_Punteo);
+
+                var local = equipos.FirstOrDefault(e => e.id_Equipo == p.id_Local);
+                var visitante = equipos.FirstOrDefault(e => e.id_Equipo == p.id_Visitante);
+
+                return new PartidoResultadoDto(
+                    p.id_Partido,
+                    local?.Nombre ?? "Desconocido",
+                    visitante?.Nombre ?? "Desconocido",
+                    
+                    new ResultadoDto(p.id_Partido, total_local, total_visitante),
+                    fecha: p.FechaHora
+                );
+            }).ToList();
+
+            return Ok(partidoResultados);
+        }
+
+
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PartidoDto>>> Get()
@@ -47,14 +86,39 @@ namespace tablero_api.Controllers
 
             return Ok(partidosDto);
         }
-        [HttpGet("/Paginado")]
-        public async Task<ActionResult<IEnumerable<PartidoDto>>> GetPartidosPerPage([FromQuery] int pagina, [FromQuery] int tamanio)
+        [HttpGet("Paginado")]
+        public async Task<ActionResult<Pagina<PartidoDto>>> GetPartidosPerPage([FromQuery] int pagina, [FromQuery] int tamanio)
         {
-            var partidos = await _partidoService.GetAllAsync();
-
-
+            var todos = await _partidoService.GetAllAsync();
             var result = await _partidoService.GetValuePerPage(pagina, tamanio);
-            return Ok(result);
+            var equipos = await _equipoService.GetAllAsync();
+            
+            List<PartidoDto> dtos = new List<PartidoDto>();
+            foreach(Partido p in result)
+            {
+               
+                   
+                var visitante = (from e in equipos
+                                where e.id_Equipo == p.id_Visitante
+                                select e.Nombre)
+                                .FirstOrDefault();
+                var local = (from e in equipos
+                            where e.id_Equipo == p.id_Local
+                            select e.Nombre)
+                            .FirstOrDefault();
+
+                dtos.Add(new PartidoDto(p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString())) ;
+
+            }
+
+
+            return new Pagina<PartidoDto>
+            {
+                Items = dtos,
+                PaginaActual = pagina,
+                TotalPaginas = (int)Math.Ceiling(todos.Count() / (double)tamanio),
+                TotalRegistros = todos.Count()
+            };
         }
         [HttpGet("{id}")]
         public async Task<ActionResult<ResponsePartidoDto>> Get(int id)
