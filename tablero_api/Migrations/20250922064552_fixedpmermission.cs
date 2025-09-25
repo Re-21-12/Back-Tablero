@@ -61,82 +61,122 @@ namespace tablero_api.Migrations
                 columns: new[] { "Id_Permiso", "Nombre", "CreatedAt","Id_Rol", "CreatedBy", "UpdatedAt", "UpdatedBy" },
                 values: new object[,]
                 {
+                    // === PERMISOS PARA ROL ADMIN (ID: 1) ===
+                    // Localidad
                     { 1, "Localidad:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 2, "Localidad:Editar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 3, "Localidad:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 4, "Localidad:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Equipo
                     { 5, "Equipo:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 6, "Equipo:Editar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 7, "Equipo:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 8, "Partido:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 8, "Equipo:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Partido
                     { 9, "Partido:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 10, "Partido:Editar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 11, "Partido:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 12, "Jugador:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 13, "Jugador:Editar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 14, "Jugador:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 15, "Jugador:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 16, "Cuarto:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 17, "Cuarto:Editar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 18, "Cuarto:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 19, "Cuarto:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 20, "Imagen:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 21, "Imagen:Editar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 22, "Imagen:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 12, "Partido:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Jugador
+                    { 13, "Jugador:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 14, "Jugador:Editar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 15, "Jugador:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 16, "Jugador:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Cuarto
+                    { 17, "Cuarto:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 18, "Cuarto:Editar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 19, "Cuarto:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 20, "Cuarto:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Imagen
+                    { 21, "Imagen:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 22, "Imagen:Editar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 23, "Imagen:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 24, "Usuario:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 25, "Usuario:Editar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 26, "Usuario:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 27, "Usuario:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 28, "Rol:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 29, "Rol:Editar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 30, "Rol:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 24, "Imagen:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Usuario
+                    { 25, "Usuario:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 26, "Usuario:Editar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 27, "Usuario:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 28, "Usuario:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Rol
+                    { 29, "Rol:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 30, "Rol:Editar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 31, "Rol:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 32, "Permiso:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 33, "Permiso:Editar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 34, "Permiso:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 32, "Rol:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
+                    
+                    // Permiso
+                    { 33, "Permiso:Agregar", DateTime.UtcNow, 1, 0, null, 0 },
+                    { 34, "Permiso:Editar", DateTime.UtcNow, 1, 0, null, 0 },
                     { 35, "Permiso:Eliminar", DateTime.UtcNow, 1, 0, null, 0 },
-                    { 36, "Localidad:Agregar", DateTime.UtcNow, 2, 0, null, 0 },
-                    { 37, "Localidad:Editar", DateTime.UtcNow, 2, 0, null, 0 },
-                    { 38, "Localidad:Eliminar", DateTime.UtcNow, 2, 0, null, 0 },
-                    { 39, "Localidad:Consultar", DateTime.UtcNow, 2, 0, null, 0 },
-                    { 40, "Equipo:Agregar", DateTime.UtcNow, 3, 0, null, 0 },
-                    { 41, "Equipo:Editar", DateTime.UtcNow, 3, 0, null, 0 },
-                    { 42, "Equipo:Eliminar", DateTime.UtcNow, 3, 0, null, 0 },
-                    { 43, "Equipo:Consultar", DateTime.UtcNow, 3, 0, null, 0 },
-                    { 44, "Partido:Agregar", DateTime.UtcNow, 4, 0, null, 0 },
-                    { 45, "Partido:Editar", DateTime.UtcNow, 4, 0, null, 0 },
-                    { 46, "Partido:Eliminar", DateTime.UtcNow, 4, 0, null, 0 },
-                    { 47, "Partido:Consultar", DateTime.UtcNow, 4, 0, null, 0 },
-                    { 48, "Jugador:Crear", DateTime.UtcNow, 5, 0, null, 0 },
-                    { 49, "Jugador:Editar", DateTime.UtcNow, 5, 0, null, 0 },
-                    { 50, "Jugador:Eliminar", DateTime.UtcNow, 5, 0, null, 0 },
-                    { 51, "Jugador:Consultar", DateTime.UtcNow, 5, 0, null, 0 },
-                    { 52, "Cuarto:Crear", DateTime.UtcNow, 6, 0, null, 0 },
-                    { 53, "Cuarto:Editar", DateTime.UtcNow, 6, 0, null, 0 },
-                    { 54, "Cuarto:Eliminar", DateTime.UtcNow, 6, 0, null, 0 },
-                    { 55, "Cuarto:Consultar", DateTime.UtcNow, 6, 0, null, 0 },
-                    { 56, "Imagen:Crear", DateTime.UtcNow, 7, 0, null, 0 },
-                    { 57, "Imagen:Editar", DateTime.UtcNow, 7, 0, null, 0 },
-                    { 58, "Imagen:Eliminar", DateTime.UtcNow, 7, 0, null, 0 },
-                    { 59, "Imagen:Consultar", DateTime.UtcNow, 7, 0, null, 0 },
-                    {60, "Usuario:Agregar", DateTime.UtcNow,8, 0, null, 0 },
-                    {61, "Usuario:Editar", DateTime.UtcNow, 8, 0, null, 0 },
-                    {62, "Usuario:Eliminar", DateTime.UtcNow, 8, 0, null, 0 },
-                    {63, "Usuario:Consultar", DateTime.UtcNow, 8, 0, null, 0 },
-                    {64, "Rol:Agregar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {65, "Rol:Editar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {66, "Rol:Eliminar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {67, "Rol:Consultar", DateTime.UtcNow, 9, 0, null, 0 },
-                    {68, "Permiso:Agregar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {69, "Permiso:Editar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {70, "Permiso:Eliminar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {71, "Permiso:Consultar", DateTime.UtcNow, 10, 0, null, 0 },
-                    {72, "Permiso:Consultar", DateTime.UtcNow, 11, 0, null,0 },
-                    {73, "Localidad:Consultar", DateTime.UtcNow, 11, 0, null,0 },
-                    {74, "Equipo:Consultar", DateTime.UtcNow, 11, 0, null,0 },
-                    {75, "Imagen:Consultar", DateTime.UtcNow, 11, 0, null,0 }
+                    { 36, "Permiso:Consultar", DateTime.UtcNow, 1, 0, null, 0 },
 
+                    // === PERMISOS PARA ROL LOCALIDAD (ID: 2) ===
+                    { 37, "Localidad:Agregar", DateTime.UtcNow, 2, 0, null, 0 },
+                    { 38, "Localidad:Editar", DateTime.UtcNow, 2, 0, null, 0 },
+                    { 39, "Localidad:Eliminar", DateTime.UtcNow, 2, 0, null, 0 },
+                    { 40, "Localidad:Consultar", DateTime.UtcNow, 2, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL EQUIPO (ID: 3) ===
+                    { 41, "Equipo:Agregar", DateTime.UtcNow, 3, 0, null, 0 },
+                    { 42, "Equipo:Editar", DateTime.UtcNow, 3, 0, null, 0 },
+                    { 43, "Equipo:Eliminar", DateTime.UtcNow, 3, 0, null, 0 },
+                    { 44, "Equipo:Consultar", DateTime.UtcNow, 3, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL PARTIDO (ID: 4) ===
+                    { 45, "Partido:Agregar", DateTime.UtcNow, 4, 0, null, 0 },
+                    { 46, "Partido:Editar", DateTime.UtcNow, 4, 0, null, 0 },
+                    { 47, "Partido:Eliminar", DateTime.UtcNow, 4, 0, null, 0 },
+                    { 48, "Partido:Consultar", DateTime.UtcNow, 4, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL JUGADOR (ID: 5) ===
+                    { 49, "Jugador:Agregar", DateTime.UtcNow, 5, 0, null, 0 },
+                    { 50, "Jugador:Editar", DateTime.UtcNow, 5, 0, null, 0 },
+                    { 51, "Jugador:Eliminar", DateTime.UtcNow, 5, 0, null, 0 },
+                    { 52, "Jugador:Consultar", DateTime.UtcNow, 5, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL CUARTO (ID: 6) ===
+                    { 53, "Cuarto:Agregar", DateTime.UtcNow, 6, 0, null, 0 },
+                    { 54, "Cuarto:Editar", DateTime.UtcNow, 6, 0, null, 0 },
+                    { 55, "Cuarto:Eliminar", DateTime.UtcNow, 6, 0, null, 0 },
+                    { 56, "Cuarto:Consultar", DateTime.UtcNow, 6, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL IMAGEN (ID: 7) ===
+                    { 57, "Imagen:Agregar", DateTime.UtcNow, 7, 0, null, 0 },
+                    { 58, "Imagen:Editar", DateTime.UtcNow, 7, 0, null, 0 },
+                    { 59, "Imagen:Eliminar", DateTime.UtcNow, 7, 0, null, 0 },
+                    { 60, "Imagen:Consultar", DateTime.UtcNow, 7, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL USUARIO (ID: 8) ===
+                    { 61, "Usuario:Agregar", DateTime.UtcNow, 8, 0, null, 0 },
+                    { 62, "Usuario:Editar", DateTime.UtcNow, 8, 0, null, 0 },
+                    { 63, "Usuario:Eliminar", DateTime.UtcNow, 8, 0, null, 0 },
+                    { 64, "Usuario:Consultar", DateTime.UtcNow, 8, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL ROL (ID: 9) ===
+                    { 65, "Rol:Agregar", DateTime.UtcNow, 9, 0, null, 0 },
+                    { 66, "Rol:Editar", DateTime.UtcNow, 9, 0, null, 0 },
+                    { 67, "Rol:Eliminar", DateTime.UtcNow, 9, 0, null, 0 },
+                    { 68, "Rol:Consultar", DateTime.UtcNow, 9, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL PERMISO (ID: 10) ===
+                    { 69, "Permiso:Agregar", DateTime.UtcNow, 10, 0, null, 0 },
+                    { 70, "Permiso:Editar", DateTime.UtcNow, 10, 0, null, 0 },
+                    { 71, "Permiso:Eliminar", DateTime.UtcNow, 10, 0, null, 0 },
+                    { 72, "Permiso:Consultar", DateTime.UtcNow, 10, 0, null, 0 },
+
+                    // === PERMISOS PARA ROL CLIENTE (ID: 11) - Solo Consultas ===
+                    { 73, "Localidad:Consultar", DateTime.UtcNow, 11, 0, null, 0 },
+                    { 74, "Equipo:Consultar", DateTime.UtcNow, 11, 0, null, 0 },
+                    { 75, "Partido:Consultar", DateTime.UtcNow, 11, 0, null, 0 },
+                    { 76, "Jugador:Consultar", DateTime.UtcNow, 11, 0, null, 0 },
+                    { 77, "Cuarto:Consultar", DateTime.UtcNow, 11, 0, null, 0 },
+                    { 78, "Imagen:Consultar", DateTime.UtcNow, 11, 0, null, 0 }
                 }
             );
 
