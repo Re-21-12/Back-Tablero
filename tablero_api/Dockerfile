@@ -5,10 +5,8 @@ WORKDIR /src
 COPY . .
 
 # Copiar el csproj y restaurar dependencias
-COPY *.csproj .
-RUN dotnet restore
 
-# Copiar todo el código y compilar en Release
+RUN dotnet restore
 RUN dotnet publish -c Release -o /app
 
 # Imagen más ligera con ASP.NET Runtime para ejecutar
