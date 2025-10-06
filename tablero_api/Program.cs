@@ -85,7 +85,10 @@ namespace tablero_api
                         "https://proy-analisis-re2112.duckdns.org",
                         "http://frontend:4200",
                         "http://157.180.19.137:4200",
-                        "http://157.180.19.137"
+                        "http://157.180.19.137",
+    "http://vmacarioe1_umg.com.gt:4200"
+
+
 
                     )
                     .AllowAnyHeader()
