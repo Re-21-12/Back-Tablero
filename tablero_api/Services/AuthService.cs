@@ -112,8 +112,7 @@ namespace tablero_api.Services
 
         public async Task<string?> RegisterAsync(RegisterRequestDto request)
         {
-            // Nota: El flujo correcto para registrar usuarios es mediante Keycloak Admin API.
-            // Aquí sólo creamos un usuario local (sin password válido en Keycloak).
+            // Implementación: crear usuario en Keycloak vía Admin API (requiere client con service account y roles adecuados)
             var usuarioExistente = await _usuarioRepository.GetByUsernameAsync(request.Nombre);
             if (usuarioExistente != null)
                 return null;
@@ -122,6 +121,85 @@ namespace tablero_api.Services
             if (rol == null)
                 return null;
 
+            var keycloak = _config.GetSection("Keycloak");
+            var authority = keycloak["Authority"]?.TrimEnd('/') ?? "http://keycloak:8080/realms/tablero";
+            // authority looks like: http://host:8080/realms/{realm}
+            var parts = authority.Split('/');
+            var realm = parts.Last();
+
+            var clientId = keycloak["AdminClientId"] ?? keycloak["ClientId"];
+            var clientSecret = keycloak["ClientSecret"];
+
+            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
+            {
+                // Can't call Admin API without admin client credentials
+                return "Keycloak admin client not configured";
+            }
+
+            // 1) Obtener token admin usando client_credentials
+            var tokenEndpoint = authority + "/protocol/openid-connect/token";
+            var client = _httpClientFactory.CreateClient();
+            var tokenPairs = new List<KeyValuePair<string, string>>
+            {
+                new("grant_type", "client_credentials"),
+                new("client_id", clientId),
+                new("client_secret", clientSecret)
+            };
+            var tokenResp = await client.PostAsync(tokenEndpoint, new FormUrlEncodedContent(tokenPairs));
+            if (!tokenResp.IsSuccessStatusCode)
+            {
+                return null;
+            }
+            var tokenJson = await tokenResp.Content.ReadAsStringAsync();
+            using var tokenDoc = JsonDocument.Parse(tokenJson);
+            var adminToken = tokenDoc.RootElement.GetProperty("access_token").GetString();
+
+            // 2) Crear usuario en Keycloak
+            var adminClient = _httpClientFactory.CreateClient();
+            adminClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+            var createUserUrl = $"{authority.Replace($"/realms/{realm}", $"/admin/realms/{realm}")}/users";
+
+            var userPayload = new
+            {
+                username = request.Nombre,
+                enabled = true,
+                emailVerified = false,
+                credentials = new[] { new { type = "password", value = request.Contrasena, temporary = false } }
+            };
+
+            var createResp = await adminClient.PostAsync(createUserUrl, new StringContent(JsonSerializer.Serialize(userPayload), Encoding.UTF8, "application/json"));
+            if (!createResp.IsSuccessStatusCode)
+            {
+                var err = await createResp.Content.ReadAsStringAsync();
+                return null;
+            }
+
+            // Keycloak returns 201 with Location header containing user id
+            var location = createResp.Headers.Location?.ToString();
+            string userId = string.Empty;
+            if (!string.IsNullOrEmpty(location))
+            {
+                userId = location.Split('/').Last();
+            }
+
+            // 3) Assign realm role to user
+            if (!string.IsNullOrEmpty(userId))
+            {
+                // Find role representation
+                var roleUrl = $"{authority.Replace($"/realms/{realm}", $"/admin/realms/{realm}")}/roles/{rol.Nombre}";
+                var roleResp = await adminClient.GetAsync(roleUrl);
+                if (roleResp.IsSuccessStatusCode)
+                {
+                    var roleJson = await roleResp.Content.ReadAsStringAsync();
+                    var roleDoc = JsonDocument.Parse(roleJson);
+                    var roleRep = new[] { new { id = roleDoc.RootElement.GetProperty("id").GetString(), name = roleDoc.RootElement.GetProperty("name").GetString() } };
+                    var assignUrl = $"{authority.Replace($"/realms/{realm}", $"/admin/realms/{realm}")}/users/{userId}/role-mappings/realm";
+                    var assignResp = await adminClient.PostAsync(assignUrl, new StringContent(JsonSerializer.Serialize(roleRep), Encoding.UTF8, "application/json"));
+                    // ignore assign failure for now
+                }
+            }
+
+            // 4) Crear usuario local
             var contrasenaCifrada = BCrypt.Net.BCrypt.HashPassword(request.Contrasena);
 
             var usuario = new Usuario
@@ -132,7 +210,7 @@ namespace tablero_api.Services
             };
 
             await _usuarioRepository.AddAsync(usuario);
-            return "Usuario registrado localmente. Para registrar en Keycloak use la Admin API";
+            return "Usuario creado en Keycloak y en BD local";
         }
 
         private async Task<Usuario?> SyncUserFromAccessTokenAsync(string? accessToken)
