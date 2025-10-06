@@ -98,8 +98,7 @@ namespace tablero_api
                     .AllowAnyMethod();
                 });
             });
-            // Read Keycloak settings (appsettings.keycloak.json is optional)
-            builder.Configuration.AddJsonFile("appsettings.keycloak.json", optional: true, reloadOnChange: true);
+            // Read Keycloak settings from configuration (already in appsettings.json)
             var keycloakSection = builder.Configuration.GetSection("Keycloak");
             var keycloakAuthority = keycloakSection["Authority"] ?? "http://keycloak:8080/realms/tablero";
             var keycloakClientId = keycloakSection["ClientId"] ?? "tablero-backend";
