@@ -167,39 +167,81 @@ namespace tablero_api
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Database.Migrate();
-                // Seed roles and permisos if they do not exist
+                // Seed roles and permisos if they do not exist (mirror the migration)
                 try
                 {
-                    // Roles list example - ensure these exist
                     var rolesToEnsure = new[] { "Admin", "Localidad", "Equipo", "Partido", "Jugador", "Cuarto", "Imagen", "Usuario", "Rol", "Permiso", "Cliente" };
                     foreach (var rn in rolesToEnsure)
                     {
-                        var exists = db.Roles.Any(r => r.Nombre == rn);
-                        if (!exists)
+                        if (!db.Roles.Any(r => r.Nombre == rn))
                         {
                             db.Roles.Add(new Rol { Nombre = rn, CreatedAt = DateTime.UtcNow, CreatedBy = 0 });
                         }
                     }
                     db.SaveChanges();
 
-                    // Example permisos seeding if table empty
-                    if (!db.Permisos.Any())
+                    // Permisos list (name, roleName) taken from migration
+                    var permisosToEnsure = new (string Nombre, string RolName)[] {
+                        // Admin (1)
+                        ("Localidad:Agregar", "Admin"), ("Localidad:Editar", "Admin"), ("Localidad:Eliminar", "Admin"), ("Localidad:Consultar", "Admin"),
+                        ("Equipo:Agregar", "Admin"), ("Equipo:Editar", "Admin"), ("Equipo:Eliminar", "Admin"), ("Equipo:Consultar", "Admin"),
+                        ("Partido:Agregar", "Admin"), ("Partido:Editar", "Admin"), ("Partido:Eliminar", "Admin"), ("Partido:Consultar", "Admin"),
+                        ("Jugador:Agregar", "Admin"), ("Jugador:Editar", "Admin"), ("Jugador:Eliminar", "Admin"), ("Jugador:Consultar", "Admin"),
+                        ("Cuarto:Agregar", "Admin"), ("Cuarto:Editar", "Admin"), ("Cuarto:Eliminar", "Admin"), ("Cuarto:Consultar", "Admin"),
+                        ("Imagen:Agregar", "Admin"), ("Imagen:Editar", "Admin"), ("Imagen:Eliminar", "Admin"), ("Imagen:Consultar", "Admin"),
+                        ("Usuario:Agregar", "Admin"), ("Usuario:Editar", "Admin"), ("Usuario:Eliminar", "Admin"), ("Usuario:Consultar", "Admin"),
+                        ("Rol:Agregar", "Admin"), ("Rol:Editar", "Admin"), ("Rol:Eliminar", "Admin"), ("Rol:Consultar", "Admin"),
+                        ("Permiso:Agregar", "Admin"), ("Permiso:Editar", "Admin"), ("Permiso:Eliminar", "Admin"), ("Permiso:Consultar", "Admin"),
+
+                        // Localidad (2)
+                        ("Localidad:Agregar", "Localidad"), ("Localidad:Editar", "Localidad"), ("Localidad:Eliminar", "Localidad"), ("Localidad:Consultar", "Localidad"),
+
+                        // Equipo (3)
+                        ("Equipo:Agregar", "Equipo"), ("Equipo:Editar", "Equipo"), ("Equipo:Eliminar", "Equipo"), ("Equipo:Consultar", "Equipo"),
+
+                        // Partido (4)
+                        ("Partido:Agregar", "Partido"), ("Partido:Editar", "Partido"), ("Partido:Eliminar", "Partido"), ("Partido:Consultar", "Partido"),
+
+                        // Jugador (5)
+                        ("Jugador:Agregar", "Jugador"), ("Jugador:Editar", "Jugador"), ("Jugador:Eliminar", "Jugador"), ("Jugador:Consultar", "Jugador"),
+
+                        // Cuarto (6)
+                        ("Cuarto:Agregar", "Cuarto"), ("Cuarto:Editar", "Cuarto"), ("Cuarto:Eliminar", "Cuarto"), ("Cuarto:Consultar", "Cuarto"),
+
+                        // Imagen (7)
+                        ("Imagen:Agregar", "Imagen"), ("Imagen:Editar", "Imagen"), ("Imagen:Eliminar", "Imagen"), ("Imagen:Consultar", "Imagen"),
+
+                        // Usuario (8)
+                        ("Usuario:Agregar", "Usuario"), ("Usuario:Editar", "Usuario"), ("Usuario:Eliminar", "Usuario"), ("Usuario:Consultar", "Usuario"),
+
+                        // Rol (9)
+                        ("Rol:Agregar", "Rol"), ("Rol:Editar", "Rol"), ("Rol:Eliminar", "Rol"), ("Rol:Consultar", "Rol"),
+
+                        // Permiso (10)
+                        ("Permiso:Agregar", "Permiso"), ("Permiso:Editar", "Permiso"), ("Permiso:Eliminar", "Permiso"), ("Permiso:Consultar", "Permiso"),
+
+                        // Cliente (11) - only consultas
+                        ("Localidad:Consultar", "Cliente"), ("Equipo:Consultar", "Cliente"), ("Partido:Consultar", "Cliente"), ("Jugador:Consultar", "Cliente"), ("Cuarto:Consultar", "Cliente"), ("Imagen:Consultar", "Cliente")
+                    };
+
+                    foreach (var (permNombre, rolNombre) in permisosToEnsure)
                     {
-                        var adminRole = db.Roles.FirstOrDefault(r => r.Nombre == "Admin");
-                        if (adminRole != null)
+                        var rol = db.Roles.FirstOrDefault(r => r.Nombre == rolNombre);
+                        if (rol == null)
+                            continue; // role should exist
+
+                        var exists = db.Permisos.Any(p => p.Nombre == permNombre && p.Id_Rol == rol.Id_Rol);
+                        if (!exists)
                         {
-                            var perms = new[] { "Localidad_Create", "Localidad_Read", "Localidad_Update", "Localidad_Delete" };
-                            foreach (var p in perms)
-                            {
-                                db.Permisos.Add(new Permiso { Nombre = p, Id_Rol = adminRole.Id_Rol, CreatedAt = DateTime.UtcNow, CreatedBy = 0 });
-                            }
+                            db.Permisos.Add(new Permiso { Nombre = permNombre, Id_Rol = rol.Id_Rol, CreatedAt = DateTime.UtcNow, CreatedBy = 0 });
                         }
-                        db.SaveChanges();
                     }
+                    db.SaveChanges();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore seeding errors at startup
+                    // Log or ignore seeding errors at startup; we keep startup resilient
+                    Console.WriteLine($"Seed error: {ex.Message}");
                 }
             }
 
