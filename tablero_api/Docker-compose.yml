@@ -14,7 +14,6 @@ services:
 
   backend:
     image: revic2112/back-tablero-desarrolloweb:tagname
-
     ports:
       - "5000:8080"
     environment:
@@ -24,6 +23,7 @@ services:
       - ConnectionStrings__Default=Server=localhost,1433;Database=Tablero_DB;User Id=appuser;Password=AppUserPass!2025;TrustServerCertificate=true;
     depends_on:
       - sqlserver
+      - keycloak
     networks:
       - server
 
@@ -56,8 +56,45 @@ services:
     networks:
       - server
 
+  postgres_keycloak:
+    image: postgres:15
+    container_name: postgres_keycloak
+    restart: always
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=KeycloakPass!2025
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    networks:
+      - server
+    ports:
+      - "5432:5432"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:21.1.1
+    container_name: keycloak
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=postgres_keycloak
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=KeycloakPass!2025
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    command: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres_keycloak
+    networks:
+      - server
+    volumes:
+      - keycloak_config:/opt/keycloak/data
+
 volumes:
   sql_data:
+  keycloak_data:
+  keycloak_config:
 
 networks:
   server:
