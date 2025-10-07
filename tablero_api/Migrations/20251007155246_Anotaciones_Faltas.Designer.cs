@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tablero_api.Data;
 
@@ -11,9 +12,11 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251007155246_Anotaciones_Faltas")]
+    partial class Anotaciones_Faltas
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,6 +33,9 @@ namespace tablero_api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
 
+                    b.Property<int>("cuartoid_Cuarto")
+                        .HasColumnType("int");
+
                     b.Property<int>("id_cuarto")
                         .HasColumnType("int");
 
@@ -39,16 +45,22 @@ namespace tablero_api.Migrations
                     b.Property<int>("id_partido")
                         .HasColumnType("int");
 
+                    b.Property<int>("jugadorid_Jugador")
+                        .HasColumnType("int");
+
+                    b.Property<int>("partidoid_Partido")
+                        .HasColumnType("int");
+
                     b.Property<int>("total_anotaciones")
                         .HasColumnType("int");
 
                     b.HasKey("id");
 
-                    b.HasIndex("id_cuarto");
+                    b.HasIndex("cuartoid_Cuarto");
 
-                    b.HasIndex("id_jugador");
+                    b.HasIndex("jugadorid_Jugador");
 
-                    b.HasIndex("id_partido");
+                    b.HasIndex("partidoid_Partido");
 
                     b.ToTable("Anotaciones");
                 });
@@ -121,6 +133,9 @@ namespace tablero_api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
 
+                    b.Property<int>("cuartoid_Cuarto")
+                        .HasColumnType("int");
+
                     b.Property<int>("id_cuarto")
                         .HasColumnType("int");
 
@@ -130,16 +145,22 @@ namespace tablero_api.Migrations
                     b.Property<int>("id_partido")
                         .HasColumnType("int");
 
+                    b.Property<int>("jugadorid_Jugador")
+                        .HasColumnType("int");
+
+                    b.Property<int>("partidoid_Partido")
+                        .HasColumnType("int");
+
                     b.Property<int>("total_falta")
                         .HasColumnType("int");
 
                     b.HasKey("id");
 
-                    b.HasIndex("id_cuarto");
+                    b.HasIndex("cuartoid_Cuarto");
 
-                    b.HasIndex("id_jugador");
+                    b.HasIndex("jugadorid_Jugador");
 
-                    b.HasIndex("id_partido");
+                    b.HasIndex("partidoid_Partido");
 
                     b.ToTable("Faltas");
                 });
@@ -408,19 +429,19 @@ namespace tablero_api.Migrations
                 {
                     b.HasOne("tablero_api.Models.Cuarto", "cuarto")
                         .WithMany()
-                        .HasForeignKey("id_cuarto")
+                        .HasForeignKey("cuartoid_Cuarto")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("tablero_api.Models.Jugador", "jugador")
                         .WithMany()
-                        .HasForeignKey("id_jugador")
+                        .HasForeignKey("jugadorid_Jugador")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("tablero_api.Models.Partido", "partido")
                         .WithMany()
-                        .HasForeignKey("id_partido")
+                        .HasForeignKey("partidoid_Partido")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -465,19 +486,19 @@ namespace tablero_api.Migrations
                 {
                     b.HasOne("tablero_api.Models.Cuarto", "cuarto")
                         .WithMany()
-                        .HasForeignKey("id_cuarto")
+                        .HasForeignKey("cuartoid_Cuarto")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("tablero_api.Models.Jugador", "jugador")
                         .WithMany()
-                        .HasForeignKey("id_jugador")
+                        .HasForeignKey("jugadorid_Jugador")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("tablero_api.Models.Partido", "partido")
                         .WithMany()
-                        .HasForeignKey("id_partido")
+                        .HasForeignKey("partidoid_Partido")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
