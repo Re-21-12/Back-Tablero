@@ -108,6 +108,12 @@ namespace tablero_api
             //    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             //    db.Database.Migrate();
            // }
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.Migrate();
+            }
+
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();

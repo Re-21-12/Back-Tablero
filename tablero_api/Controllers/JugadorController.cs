@@ -19,12 +19,12 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreatedJugadorDto>>> Get()
+        public async Task<ActionResult<IEnumerable<CreateJugadorDto>>> Get()
         {
 
             var jugadores = await _service.GetAllAsync();
 
-            var dto = jugadores.Select(j => new CreatedJugadorDto(
+            var dto = jugadores.Select(j => new CreateJugadorDto(
                 j.Nombre,
                 j.Apellido,
                 j.Edad,
@@ -34,13 +34,13 @@ namespace tablero_api.Controllers
         }
 
             [HttpGet("{id}")]
-        public async Task<ActionResult<CreatedJugadorDto>> Get(int id)
+        public async Task<ActionResult<CreateJugadorDto>> Get(int id)
         {
             var jugador = await _service.GetByIdAsync(id);
             if (jugador == null)
                 return NotFound();
 
-            var dto = new CreatedJugadorDto(
+            var dto = new CreateJugadorDto(
                 jugador.Nombre,
                 jugador.Apellido,
                 jugador.Edad,
