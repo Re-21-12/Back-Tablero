@@ -50,8 +50,22 @@ namespace tablero_api.Controllers
             return Ok();
 
         }
+        [HttpGet("jugador/{id}")]
+        public async Task<ActionResult<IEnumerable<AnotacionJugadorDto>>> GetByJugador(int id)
+        {
+            var todos = await _anotacion.GetAllAsync();
+            var anotacionJugador = new List<AnotacionJugadorDto>();
+            foreach (Anotacion a in todos)
+            {
+                if (a.id_jugador == id)
+                {
+                    anotacionJugador.Add(new AnotacionJugadorDto(a.id_partido, a.id_cuarto, a.total_anotaciones));
+                }
+            }
 
-       
+            return Ok(anotacionJugador);
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] AnotacionDto dto)
         {

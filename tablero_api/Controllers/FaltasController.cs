@@ -36,7 +36,21 @@ namespace tablero_api.Controllers
             FaltaDto falta = new FaltaDto(entero.id_jugador, entero.id_partido, entero.id_cuarto, entero.total_falta);
             return Ok(falta);
         }
-
+        [HttpGet("jugador/{id}")]
+        public async Task<ActionResult<IEnumerable<FaltaJugadorDto>>> GetByJugador(int id)
+        {
+            var todos = await _faltas.GetAllAsync();
+            var faltaJugador = new List<FaltaJugadorDto>();
+            foreach(Falta f in todos)
+            {
+                if (f.id_jugador == id)
+                {
+                    faltaJugador.Add(new FaltaJugadorDto(f.id_partido, f.id_cuarto, f.total_falta));
+                }
+            }
+            
+            return Ok(faltaJugador);
+        }
         // POST api/<FaltasController>
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] FaltaDto dto)

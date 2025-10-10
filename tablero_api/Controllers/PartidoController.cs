@@ -139,6 +139,27 @@ namespace tablero_api.Controllers
             );
             return Ok(dtoResponse);
         }
+        [HttpGet("reporte/{id}")]
+        public async Task<ActionResult<ReportePartidoDto>> GetReporte(int id)
+        {
+            var partido = await _partidoService.GetByIdAsync(id);
+            if (partido == null)
+                return NotFound();
+
+            var equipoLocalNombre = await _equipoService.GetByIdAsync(partido.id_Local);
+            var equipoVisitanteNombre = await _equipoService.GetByIdAsync(partido.id_Visitante);
+            var localidad = await _localidadService.GetByIdAsync(partido.id_Localidad);
+
+            var dtoResponse = new ReportePartidoDto(
+                partido.FechaHora,
+                localidad.id_Localidad,
+                equipoLocalNombre.id_Equipo,
+                equipoVisitanteNombre.id_Equipo
+            );
+            return Ok(dtoResponse);
+        }
+
+
 
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreatePartidoDto dto)
