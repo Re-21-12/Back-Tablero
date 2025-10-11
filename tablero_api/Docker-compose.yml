@@ -17,13 +17,13 @@ services:
     ports:
       - "5000:8080"
     environment:
-      - ASPNETCORE_URLS=http://+:8080
-      - DOTNET_RUNNING_IN_CONTAINER=true
-      - DOTNET_USE_POLLING_FILE_WATCHER=true
-      - ConnectionStrings__Default=Server=localhost,1433;Database=Tablero_DB;User Id=appuser;Password=AppUserPass!2025;TrustServerCertificate=true;
+      - ASPNETCORE_URLS=${ASPNETCORE_URLS}
+      - DOTNET_RUNNING_IN_CONTAINER=${DOTNET_RUNNING_IN_CONTAINER}
+      - DOTNET_USE_POLLING_FILE_WATCHER=${DOTNET_USE_POLLING_FILE_WATCHER}
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=${DB_NAME};User Id=appuser;Password=${APP_USER_PASSWORD};TrustServerCertificate=true;
     depends_on:
       - sqlserver
-      - keycloak
+      - keycloak-config
     networks:
       - server
 
@@ -33,7 +33,7 @@ services:
     restart: always
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong!Passw0rd
+      - SA_PASSWORD=${SA_PASSWORD}
       - MSSQL_PID=Express
     ports:
       - "1433:1433"
@@ -52,7 +52,7 @@ services:
       - sqlserver
     volumes:
       - ./script:/scripts
-    entrypoint: /bin/bash -c "sleep 15; /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P YourStrong!Passw0rd -i /scripts/init.sql"
+    entrypoint: /bin/bash -c "sleep 15; /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P ${SA_PASSWORD} -i /scripts/init.sql"
     networks:
       - server
 
@@ -61,40 +61,87 @@ services:
     container_name: postgres_keycloak
     restart: always
     environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=keycloak
-      - POSTGRES_PASSWORD=KeycloakPass!2025
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - keycloak_data:/var/lib/postgresql/data
     networks:
       - server
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=${POSTGRES_PASSWORD} psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c 'SELECT 1;' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   keycloak:
     image: quay.io/keycloak/keycloak:21.1.1
     container_name: keycloak
+    restart: always
     environment:
       - KC_DB=postgres
       - KC_DB_URL_HOST=postgres_keycloak
-      - KC_DB_USERNAME=keycloak
-      - KC_DB_PASSWORD=KeycloakPass!2025
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB_USERNAME=${POSTGRES_USER}
+      - KC_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
     command: start-dev
     ports:
       - "8080:8080"
     depends_on:
-      - postgres_keycloak
+      postgres_keycloak:
+        condition: service_healthy
     networks:
       - server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/realms/master || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s  
+
+  keycloak-config:
+    image: curlimages/curl:latest
+    container_name: keycloak-config
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - REALM=master
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
     volumes:
-      - keycloak_config:/opt/keycloak/data
+      - ./keycloak-setup.sh:/setup.sh:ro
+    entrypoint: ["/bin/sh", "/setup.sh"]
+    networks:
+      - server
+    restart: on-failure
+
+  auth-service:
+    build: .
+    container_name: auth-service
+    ports:
+      - "3000:3000"
+    environment:
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=master
+      - KEYCLOAK_ADMIN_CLIENT_ID=${CLIENT_ID}
+      - KEYCLOAK_CLIENT_SECRET=${CLIENT_SECRET}
+      - KEYCLOAK_ADMIN_USERNAME=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+    depends_on:
+      - keycloak-config
+    networks:
+      - server
 
 volumes:
   sql_data:
   keycloak_data:
-  keycloak_config:
 
 networks:
   server:

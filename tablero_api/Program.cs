@@ -11,12 +11,14 @@ using tablero_api.Services;
 using tablero_api.Services.Interfaces;
 using tablero_api.Utils;
 using tablero_api.Models;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 
 namespace tablero_api
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +77,19 @@ namespace tablero_api
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
+            // Admin Service HttpClient
+            builder.Services.AddHttpClient("AdminService", client =>
+            {
+                client.BaseAddress = new Uri("http://127.0.0.1:3000");
+            });
+            // Registrar el AdminService
+            builder.Services.AddScoped<IAdminService, AdminService>(provider =>
+            {
+                var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+                var httpClient = httpClientFactory.CreateClient("AdminService");
+                var logger = provider.GetRequiredService<ILogger<AdminService>>();
+                return new AdminService(httpClient, logger);
+            });
 
             // CORS
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
@@ -82,26 +97,15 @@ namespace tablero_api
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins(
-                        "http://localhost:4200",
-                        "https://front-analisis-registros.netlify.app",
-                        "https://proy-analisis-re2112.duckdns.org",
-                        "http://frontend:4200",
-                        "http://157.180.19.137:4200",
-                        "http://157.180.19.137",
-    "http://vmacarioe1_umg.com.gt:4200"
-
-
-
-                    )
+                    policy.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 });
             });
             // Read Keycloak settings from configuration (already in appsettings.json)
             var keycloakSection = builder.Configuration.GetSection("Keycloak");
-            var keycloakAuthority = keycloakSection["Authority"] ?? "http://keycloak:8080/realms/tablero";
-            var keycloakClientId = keycloakSection["ClientId"] ?? "tablero-backend";
+            var keycloakAuthority = keycloakSection["Authority"] ?? "http://keycloak:8080/realms/master";
+            var keycloakClientId = keycloakSection["ClientId"] ?? "admin-service";
 
             // Authentication using Keycloak (OpenID Connect JWKS)
             builder.Services.AddAuthentication(options =>
@@ -153,95 +157,39 @@ namespace tablero_api
 
             var app = builder.Build();
 
+            // Apply DB migration and seed data
+            if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    db.Database.Migrate();
+                    try
+                    {
+                        await DataSeeder.SeedAsync(db);
+                    }
+                    catch (Exception ex)
+                    {
+                        // log or throw
+                        Console.WriteLine(ex);
+                    }
+                }
+            }
+            else
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    db.Database.Migrate();
+                }
+            }
+
             app.MapGet("/", () => "API funcionando");
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
-
-            // Apply DB migration and seed data
-            using (var scope = app.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.Database.Migrate();
-                // Seed roles and permisos if they do not exist (mirror the migration)
-                try
-                {
-                    var rolesToEnsure = new[] { "Admin", "Localidad", "Equipo", "Partido", "Jugador", "Cuarto", "Imagen", "Usuario", "Rol", "Permiso", "Cliente" };
-                    foreach (var rn in rolesToEnsure)
-                    {
-                        if (!db.Roles.Any(r => r.Nombre == rn))
-                        {
-                            db.Roles.Add(new Rol { Nombre = rn, CreatedAt = DateTime.UtcNow, CreatedBy = 0 });
-                        }
-                    }
-                    db.SaveChanges();
-
-                    // Permisos list (name, roleName) taken from migration
-                    var permisosToEnsure = new (string Nombre, string RolName)[] {
-                        // Admin (1)
-                        ("Localidad:Agregar", "Admin"), ("Localidad:Editar", "Admin"), ("Localidad:Eliminar", "Admin"), ("Localidad:Consultar", "Admin"),
-                        ("Equipo:Agregar", "Admin"), ("Equipo:Editar", "Admin"), ("Equipo:Eliminar", "Admin"), ("Equipo:Consultar", "Admin"),
-                        ("Partido:Agregar", "Admin"), ("Partido:Editar", "Admin"), ("Partido:Eliminar", "Admin"), ("Partido:Consultar", "Admin"),
-                        ("Jugador:Agregar", "Admin"), ("Jugador:Editar", "Admin"), ("Jugador:Eliminar", "Admin"), ("Jugador:Consultar", "Admin"),
-                        ("Cuarto:Agregar", "Admin"), ("Cuarto:Editar", "Admin"), ("Cuarto:Eliminar", "Admin"), ("Cuarto:Consultar", "Admin"),
-                        ("Imagen:Agregar", "Admin"), ("Imagen:Editar", "Admin"), ("Imagen:Eliminar", "Admin"), ("Imagen:Consultar", "Admin"),
-                        ("Usuario:Agregar", "Admin"), ("Usuario:Editar", "Admin"), ("Usuario:Eliminar", "Admin"), ("Usuario:Consultar", "Admin"),
-                        ("Rol:Agregar", "Admin"), ("Rol:Editar", "Admin"), ("Rol:Eliminar", "Admin"), ("Rol:Consultar", "Admin"),
-                        ("Permiso:Agregar", "Admin"), ("Permiso:Editar", "Admin"), ("Permiso:Eliminar", "Admin"), ("Permiso:Consultar", "Admin"),
-
-                        // Localidad (2)
-                        ("Localidad:Agregar", "Localidad"), ("Localidad:Editar", "Localidad"), ("Localidad:Eliminar", "Localidad"), ("Localidad:Consultar", "Localidad"),
-
-                        // Equipo (3)
-                        ("Equipo:Agregar", "Equipo"), ("Equipo:Editar", "Equipo"), ("Equipo:Eliminar", "Equipo"), ("Equipo:Consultar", "Equipo"),
-
-                        // Partido (4)
-                        ("Partido:Agregar", "Partido"), ("Partido:Editar", "Partido"), ("Partido:Eliminar", "Partido"), ("Partido:Consultar", "Partido"),
-
-                        // Jugador (5)
-                        ("Jugador:Agregar", "Jugador"), ("Jugador:Editar", "Jugador"), ("Jugador:Eliminar", "Jugador"), ("Jugador:Consultar", "Jugador"),
-
-                        // Cuarto (6)
-                        ("Cuarto:Agregar", "Cuarto"), ("Cuarto:Editar", "Cuarto"), ("Cuarto:Eliminar", "Cuarto"), ("Cuarto:Consultar", "Cuarto"),
-
-                        // Imagen (7)
-                        ("Imagen:Agregar", "Imagen"), ("Imagen:Editar", "Imagen"), ("Imagen:Eliminar", "Imagen"), ("Imagen:Consultar", "Imagen"),
-
-                        // Usuario (8)
-                        ("Usuario:Agregar", "Usuario"), ("Usuario:Editar", "Usuario"), ("Usuario:Eliminar", "Usuario"), ("Usuario:Consultar", "Usuario"),
-
-                        // Rol (9)
-                        ("Rol:Agregar", "Rol"), ("Rol:Editar", "Rol"), ("Rol:Eliminar", "Rol"), ("Rol:Consultar", "Rol"),
-
-                        // Permiso (10)
-                        ("Permiso:Agregar", "Permiso"), ("Permiso:Editar", "Permiso"), ("Permiso:Eliminar", "Permiso"), ("Permiso:Consultar", "Permiso"),
-
-                        // Cliente (11) - only consultas
-                        ("Localidad:Consultar", "Cliente"), ("Equipo:Consultar", "Cliente"), ("Partido:Consultar", "Cliente"), ("Jugador:Consultar", "Cliente"), ("Cuarto:Consultar", "Cliente"), ("Imagen:Consultar", "Cliente")
-                    };
-
-                    foreach (var (permNombre, rolNombre) in permisosToEnsure)
-                    {
-                        var rol = db.Roles.FirstOrDefault(r => r.Nombre == rolNombre);
-                        if (rol == null)
-                            continue; // role should exist
-
-                        var exists = db.Permisos.Any(p => p.Nombre == permNombre && p.Id_Rol == rol.Id_Rol);
-                        if (!exists)
-                        {
-                            db.Permisos.Add(new Permiso { Nombre = permNombre, Id_Rol = rol.Id_Rol, CreatedAt = DateTime.UtcNow, CreatedBy = 0 });
-                        }
-                    }
-                    db.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    // Log or ignore seeding errors at startup; we keep startup resilient
-                    Console.WriteLine($"Seed error: {ex.Message}");
-                }
             }
 
             app.UseCors("AllowFrontend");

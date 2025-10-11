@@ -11,77 +11,90 @@ namespace tablero_api.Controllers
     [Authorize]
     public class PermisoController : ControllerBase
     {
-        private readonly IService<Permiso> _service;
+        private readonly IAdminService _adminService;
 
-        public PermisoController(IService<Permiso> service)
+        public PermisoController(IAdminService adminService)
         {
-            _service = service;
+            _adminService = adminService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PermisoDto>>> Get()
         {
-            var permisos = await _service.GetAllAsync();
-            var dto = permisos.Select(p => new PermisoDto(
-                p.Nombre,
-                p.Id_Rol
-                ));
-           
-            return Ok(dto);
+            var permisos = await _adminService.GetAllPermisosAsync();
+            return Ok(permisos);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<PermisoDto>> Get(int id)
         {
-            var permiso = await _service.GetByIdAsync(id);
+            var permiso = await _adminService.GetPermisoByIdAsync(id);
             if (permiso == null)
                 return NotFound();
-            var dto = new PermisoDto
-            (
-               permiso.Nombre,
-               permiso.Id_Rol
-            );
-            return Ok(dto);
+            
+            return Ok(permiso);
         }
 
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] PermisoDto permisoDto)
         {
-            var permiso = new Permiso()
-            {
-                Nombre = permisoDto.Nombre
-            };
-            var creado = await _service.CreateAsync(permiso);
+            var creado = await _adminService.CreatePermisoAsync(permisoDto);
             return CreatedAtAction(nameof(Get), new { id = creado.Id_Permiso }, creado);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] PermisoDto permisodto)
+        public async Task<IActionResult> Put(int id, [FromBody] PermisoDto permisoDto)
         {
-            var permiso = await _service.GetByIdAsync(id);
-            if (permiso == null) 
-                return BadRequest("El ID no coincide");
-
-            var mapPermiso = new Permiso()
-            {
-                Id_Permiso = id,
-                Nombre = permisodto.Nombre,
-                Id_Rol = permisodto.Id_Rol
-            };
-
-            var actualizado = await _service.UpdateAsync(mapPermiso);
+            var actualizado = await _adminService.UpdatePermisoAsync(id, permisoDto);
             return Ok(actualizado);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var permiso = await _service.GetByIdAsync(id);
-            if (permiso == null)
-                return NotFound();
+            var result = await _adminService.DeletePermisoAsync(id);
+            if (!result)
+                return NotFound("Permiso no encontrado");
 
-            await _service.DeleteAsync(id);
             return Ok("Permiso eliminado");
+        }
+
+        // Métodos adicionales para gestión de permisos de usuarios
+        [HttpPost("usuarios/{userId}")]
+        public async Task<IActionResult> AsignarPermisosAUsuario(string userId, [FromBody] List<string> permissionNames)
+        {
+            var result = await _adminService.AsignarPermisosAUsuarioAsync(userId, permissionNames);
+            if (!result)
+                return BadRequest("Error al asignar permisos al usuario");
+
+            return Ok("Permisos asignados al usuario");
+        }
+
+        [HttpDelete("usuarios/{userId}")]
+        public async Task<IActionResult> QuitarPermisosDeUsuario(string userId, [FromBody] List<string> permissionNames)
+        {
+            var result = await _adminService.QuitarPermisosDeUsuarioAsync(userId, permissionNames);
+            if (!result)
+                return BadRequest("Error al quitar permisos del usuario");
+
+            return Ok("Permisos removidos del usuario");
+        }
+
+        [HttpGet("usuarios/{userId}")]
+        public async Task<ActionResult<IEnumerable<PermisoDto>>> GetPermisosDeUsuario(string userId)
+        {
+            var permisos = await _adminService.GetPermisosDeUsuarioAsync(userId);
+            if (permisos == null)
+                return NotFound("Usuario no encontrado o sin permisos");
+
+            return Ok(permisos);
+        }
+
+        [HttpGet("usuarios/{userId}/tiene/{roleName}")]
+        public async Task<ActionResult<bool>> UsuarioTienePermiso(string userId, string roleName)
+        {
+            var tienePermiso = await _adminService.UsuarioTienePermisoAsync(userId, roleName);
+            return Ok(new { userId, roleName, tienePermiso });
         }
     }
 }
