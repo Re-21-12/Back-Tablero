@@ -13,6 +13,8 @@ using tablero_api.Utils;
 using tablero_api.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
+using tablero_api.Extensions;
+using Microsoft.AspNetCore.Authorization; // agregado
 
 namespace tablero_api
 {
@@ -31,7 +33,6 @@ namespace tablero_api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                // Configuraci�n para soportar JWT Bearer en Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -57,6 +58,8 @@ namespace tablero_api
                     }
                 });
             });
+
+            // Servicios y dependencias (sin cambios funcionales)
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -68,21 +71,17 @@ namespace tablero_api
                 return new CryptoHelper(key, iv);
             });
 
-            // EF Core + SQL Server
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
-            // Dependencias
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
-            // Admin Service HttpClient
+            // Admin Service HttpClient y registro
             builder.Services.AddHttpClient("AdminService", client =>
             {
                 client.BaseAddress = new Uri("http://127.0.0.1:3000");
             });
-            // Registrar el AdminService
             builder.Services.AddScoped<IAdminService, AdminService>(provider =>
             {
                 var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
@@ -92,7 +91,7 @@ namespace tablero_api
             });
 
             // CORS
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
@@ -102,62 +101,22 @@ namespace tablero_api
                     .AllowAnyMethod();
                 });
             });
-            // Read Keycloak settings from configuration (already in appsettings.json)
-            var keycloakSection = builder.Configuration.GetSection("Keycloak");
-            var keycloakAuthority = keycloakSection["Authority"] ?? "http://keycloak:8080/realms/master";
-            var keycloakClientId = keycloakSection["ClientId"] ?? "admin-service";
 
-            // Authentication using Keycloak (OpenID Connect JWKS)
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.Authority = keycloakAuthority;
-                options.Audience = keycloakClientId;
-                options.RequireHttpsMetadata = false; // set true in production
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    NameClaimType = "preferred_username"
-                };
+            // AUTH: usar extensión que encapsula la configuración Keycloak/JWKS
+            builder.Services.AddKeycloakJwt(builder.Configuration);
 
-                // Map roles from realm_access.roles into ClaimTypes.Role
-                options.Events = new JwtBearerEvents
-                {
-                    OnTokenValidated = ctx =>
-                    {
-                        var jwt = ctx.SecurityToken as JwtSecurityToken;
-                        if (jwt != null && jwt.Payload.TryGetValue("realm_access", out var realmAccessObj))
-                        {
-                            try
-                            {
-                                using var doc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(realmAccessObj));
-                                if (doc.RootElement.TryGetProperty("roles", out var rolesElem) && rolesElem.ValueKind == System.Text.Json.JsonValueKind.Array)
-                                {
-                                    var id = ctx.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
-                                    foreach (var r in rolesElem.EnumerateArray())
-                                    {
-                                        id?.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, r.GetString() ?? ""));
-                                    }
-                                }
-                            }
-                            catch { }
-                        }
-                        return Task.CompletedTask;
-                    }
-                };
+            // Forzar autorización global: solo usuarios autenticados (JWT/Keycloak) podrán acceder.
+            // Mantenerás excepciones explícitas con [AllowAnonymous] en controladores/acciones que lo requieran.
+            builder.Services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .Build();
             });
-
-            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
-            // Apply DB migration and seed data
+            // Migraciones y seed
             if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
             {
                 using (var scope = app.Services.CreateScope())
@@ -170,7 +129,6 @@ namespace tablero_api
                     }
                     catch (Exception ex)
                     {
-                        // log or throw
                         Console.WriteLine(ex);
                     }
                 }
@@ -185,7 +143,6 @@ namespace tablero_api
             }
 
             app.MapGet("/", () => "API funcionando");
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();

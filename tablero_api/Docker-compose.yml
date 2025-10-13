@@ -102,29 +102,8 @@ services:
       retries: 10
       start_period: 120s  
 
-  keycloak-config:
-    image: curlimages/curl:latest
-    container_name: keycloak-config
-    depends_on:
-      keycloak:
-        condition: service_healthy
-    environment:
-      - KEYCLOAK_URL=http://keycloak:8080
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - REALM=master
-      - CLIENT_ID=${CLIENT_ID}
-      - CLIENT_SECRET=${CLIENT_SECRET}
-    volumes:
-      - ./keycloak-setup.sh:/setup.sh:ro
-    entrypoint: ["/bin/sh", "/setup.sh"]
-    networks:
-      - server
-    restart: on-failure
-
-  auth-service:
-    build: .
-    container_name: auth-service
+  admin-service:
+    image: revic2112/admin-service-desarrolloweb:latest
     ports:
       - "3000:3000"
     environment:
