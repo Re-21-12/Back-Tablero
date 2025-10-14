@@ -260,7 +260,7 @@ namespace tablero_api.Controllers
             return Ok("Partido eliminado");
         }
 
-        [HttpGet("Reporte/Partido")]
+        [HttpGet("Reporte/Roster")]
         public async Task<IActionResult> GetReportePartido([FromQuery] int id_partido)
         {
             

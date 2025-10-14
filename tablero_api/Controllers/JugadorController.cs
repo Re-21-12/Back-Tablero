@@ -17,13 +17,17 @@ namespace tablero_api.Controllers
     {
         private readonly IService<Jugador> _service;
         private readonly IService<Equipo> _EquipoService;
+        private readonly IService<Falta> _faltas;
+        private readonly IService<Anotacion> _anotaciones;
         private readonly HttpClient _httpClient;
 
-        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService, HttpClient httpClient)
+        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService, HttpClient httpClient, IService<Falta> faltas, IService<Anotacion> anotaciones)
         {
             _service = service;
             _EquipoService = equipoService;
             _httpClient = httpClient;
+            _faltas = faltas;
+            _anotaciones = anotaciones;
         }
         [HttpGet("byTeam/{id_equipo}")]
         public async Task<ActionResult<IEnumerable<JugadorDto>>> GetByTeam(int id_equipo)
@@ -198,6 +202,64 @@ namespace tablero_api.Controllers
                 TotalRegistros = todos.Count()
             };
         }
-        
+        [HttpGet("Reporte/EstadisticasJugador")]
+        public async Task<IActionResult> GetEstadisticasJugador([FromQuery] int id_jugador)
+        {
+            
+            string pythonUrl = "http://127.0.0.1:8000/Reporte/Estadistica/Jugador";
+
+            
+            var jugador = await _service.GetByIdAsync(id_jugador);
+            var faltas = await _faltas.GetAllAsync();
+            var anotaciones = await _anotaciones.GetAllAsync();
+            var jugadorFaltas = faltas.Where(f => f.id_jugador == id_jugador).ToList();
+            var jugadorAnotaciones = anotaciones.Where(a => a.id_jugador == id_jugador).ToList();
+
+            
+            var payload = new
+            {
+                jugador = new
+                {
+                    jugador.id_Jugador,
+                    jugador.Nombre,
+                    jugador.Apellido,
+                    jugador.Posicion,
+                    jugador.Edad,
+                    jugador.Estatura,
+                    jugador.Nacionalidad
+                },
+                total_faltas = faltas.Select(f => new
+                {
+                    id_Partido = f.id_partido,
+                    total_faltas = f.total_falta
+                }),
+                total_anotaciones = anotaciones.Select(a => new
+                {
+                    id_partido = a.id_partido,
+                    total_anotaciones = a.total_anotaciones
+                })
+            };
+
+            
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+          
+            var response = await _httpClient.PostAsync(pythonUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                return BadRequest($"Error del servicio Python: {errorMsg}");
+            }
+
+            
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+
+            
+            return File(pdfBytes, "application/pdf", $"estadisticas_jugador_{jugador.Nombre}_{jugador.Apellido}.pdf");
+        }
+
+
     }
 }
