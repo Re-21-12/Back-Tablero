@@ -71,6 +71,8 @@ namespace tablero_api
             // Dependencias
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
+            builder.Services.AddHttpClient();
+
 
 
             // CORS

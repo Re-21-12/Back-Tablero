@@ -3,6 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+
 
 namespace tablero_api.Controllers
 {
@@ -13,11 +19,15 @@ namespace tablero_api.Controllers
     {
         private readonly IService<Equipo> _service;
         private readonly IService<Localidad> _localidadService;
+        private readonly HttpClient _httpClient;
+         
 
-        public EquipoController(IService<Equipo> service, IService<Localidad> localidadService)
+
+        public EquipoController(IService<Equipo> service, IService<Localidad> localidadService, HttpClient httpClient)
         {
             _service = service;
             _localidadService = localidadService;
+            _httpClient = httpClient;
         }
 
 
@@ -62,7 +72,42 @@ namespace tablero_api.Controllers
             );
             return Ok(dto);
         }
+        [HttpGet("reporte")]
+        public async Task<IActionResult> GetReporte()
+        {
+            string python_string = "http://127.0.0.1:8000/Reporte/Equipos";
+            var todos = await  _service.GetAllAsync();
+            var equipoDtos = new List<EquipoDto>();
+            
+            
+            
+            JsonElement listaEquipos;
+            foreach (var equipo in todos)
+            {
+                var localidad = await _localidadService.GetByIdAsync(equipo.id_Localidad);
+                equipoDtos.Add(new EquipoDto(
+                    equipo.id_Equipo,
+                    equipo.Nombre,
+                    localidad?.Nombre ?? string.Empty,
+                    localidad.id_Localidad,
+                    equipo.url_imagen
+                ));
+            }
+            var json = JsonSerializer.Serialize(equipoDtos);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(python_string, content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                return BadRequest($"Error del servicio Python: {errorMsg}");
+            }
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
 
+           
+            return File(pdfBytes, "application/pdf", "reporte_equipos.pdf");
+        }
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreateEquipoDto dto)
         {

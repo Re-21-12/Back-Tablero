@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text;
 using tablero_api.Migrations;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
@@ -14,11 +17,13 @@ namespace tablero_api.Controllers
     {
         private readonly IService<Jugador> _service;
         private readonly IService<Equipo> _EquipoService;
+        private readonly HttpClient _httpClient;
 
-        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService)
+        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService, HttpClient httpClient)
         {
             _service = service;
             _EquipoService = equipoService;
+            _httpClient = httpClient;
         }
         [HttpGet("byTeam/{id_equipo}")]
         public async Task<ActionResult<IEnumerable<JugadorDto>>> GetByTeam(int id_equipo)
@@ -54,6 +59,39 @@ namespace tablero_api.Controllers
                 j.id_Equipo
             ));
             return Ok(dto);
+        }
+        [HttpGet("Reporte/Equipo")]
+        public async Task<IActionResult> GetReporte([FromQuery] int id_equipo)
+        {
+            string python_string = "http://127.0.0.1:8000/Reporte/Jugadores";
+            var todos = await _service.GetAllAsync();
+            var equipo = await _EquipoService.GetByIdAsync(id_equipo);
+            var jugadores = new List<JugadorDto>();
+            python_string = python_string+ "?equipo=" + equipo.Nombre;
+
+
+            foreach (Jugador j in todos)
+            {
+                if (j.id_Equipo == id_equipo)
+                {
+                    jugadores.Add(new JugadorDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, j.id_Equipo));
+                }
+            }
+
+            var json = JsonSerializer.Serialize(jugadores);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(python_string, content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                return BadRequest($"Error del servicio Python: {errorMsg}");
+            }
+            var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+
+
+            return File(pdfBytes, "application/pdf", "reporte_jugadores_"+equipo.Nombre+".pdf");
         }
 
         [HttpGet("{id}")]
