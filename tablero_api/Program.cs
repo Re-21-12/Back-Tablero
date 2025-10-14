@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 using tablero_api.Extensions;
 using Microsoft.AspNetCore.Authorization; // agregado
+using DotNetEnv; // agregado
 
 namespace tablero_api
 {
@@ -22,6 +23,8 @@ namespace tablero_api
     {
         private static async Task Main(string[] args)
         {
+            Env.Load();
+
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
