@@ -19,24 +19,33 @@ namespace tablero_api.Services
         IService<RefreshToken> refreshTokenRepository
         ) : IAuthService
     {
-        private readonly IUsuarioRepository _usuarioRepository= usuarioRepository;
+        private readonly IUsuarioRepository _usuarioRepository = usuarioRepository;
         private readonly IConfiguration _config = config;
         private readonly IService<Rol> _rolRepository = rolRepository;
-        private readonly IService <RefreshToken> _refreshToken = refreshTokenRepository;
+        private readonly IService<RefreshToken> _refreshToken = refreshTokenRepository;
         private readonly CryptoHelper _cryptoHelper = cryptoHelper;
 
         public async Task<LoginResponseDto?> AuthenticateAsync(LoginRequestDto request)
         {
-            var usuario = await _usuarioRepository.GetUserWithRoleAsync(request.Nombre, request.Contrasena);
+            var usuario = await _usuarioRepository.GetUserWithRoleAndPermissionsAsync(request.Nombre, request.Contrasena);
             if (usuario == null)
                 return null;
+
             var token = GenerateJwtToken(usuario);
             string nombreRol = "";
+            List<PermisoDto> permisos = new();
+
             if (usuario.Rol != null)
             {
-                //Esto es por que en el repository se usa el includes para buscar y eso facilita la inclusion
                 nombreRol = usuario.Rol.Nombre;
+
+                // Obtener permisos del rol
+                if (usuario.Rol.Permisos != null && usuario.Rol.Permisos.Any())
+                {
+                    permisos = usuario.Rol.Permisos.Select(p => new PermisoDto(p.Nombre, p.Id_Rol)).ToList();
+                }
             }
+
             var refreshToken = new RefreshToken
             {
                 Token = GenerateRefreshToken(),
@@ -46,11 +55,19 @@ namespace tablero_api.Services
                 IsRevoked = false
             };
             await _refreshToken.CreateAsync(refreshToken);
-            RolDto rolDto = new(nombreRol);
 
-            return new LoginResponseDto(token, usuario.Nombre, rolDto, refreshToken.Token);
-            
+            RolDto rolDto = new(usuario.Id_Rol, nombreRol);
+
+            return new LoginResponseDto(
+                token,
+                Convert.ToInt32(_config["Jwt:ExpiresInMinutes"]),
+                usuario.Nombre,
+                rolDto,
+                refreshToken.Token,
+                permisos
+            );
         }
+
         private string GenerateJwtToken(Usuario usuario)
         {
             var jwtSettings = _config.GetSection("Jwt");
@@ -62,6 +79,7 @@ namespace tablero_api.Services
             {
                 nombreRol = usuario.Rol.Nombre;
             }
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.Name, usuario.Nombre),
@@ -79,10 +97,12 @@ namespace tablero_api.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
         private string GenerateRefreshToken()
         {
             return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }
+
         public async Task<RefreshResponseDto> Refresh(RefreshRequestDto request)
         {
             RefreshToken existingToken = await _refreshToken.GetByPredicateAsync(rt => rt.Token == request.RefreshToken);
@@ -109,6 +129,7 @@ namespace tablero_api.Services
             await _refreshToken.DeleteAsync(existingToken.Id);
             return new RefreshResponseDto(newJwtToken, newRefreshToken.Token);
         }
+
         public async Task<string?> RegisterAsync(RegisterRequestDto request)
         {
             var usuarioExistente = await _usuarioRepository.GetByUsernameAsync(request.Nombre);
@@ -131,6 +152,5 @@ namespace tablero_api.Services
             await _usuarioRepository.AddAsync(usuario);
             return "Usuario registrado correctamente.";
         }
-
     }
 }

@@ -8,8 +8,12 @@ namespace tablero_api.Models
         {
             get; set;
         }
+        public int Id_Rol
+        {
+            get; set;
+        }
+        public Rol Rol{ get; set; }
         public string Nombre { get; set; } = string.Empty;
-        public ICollection<Rol> Roles { get; set; } = [];
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public int CreatedBy
         {

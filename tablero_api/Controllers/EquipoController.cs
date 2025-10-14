@@ -12,23 +12,34 @@ namespace tablero_api.Controllers
     public class EquipoController : ControllerBase
     {
         private readonly IService<Equipo> _service;
+        private readonly IService<Localidad> _localidadService;
 
-        public EquipoController(IService<Equipo> service)
+        public EquipoController(IService<Equipo> service, IService<Localidad> localidadService)
         {
             _service = service;
+            _localidadService = localidadService;
         }
 
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<EquipoDto>>>Get()
+        public async Task<ActionResult<IEnumerable<EquipoDto>>> Get()
         {
             var equipos = await _service.GetAllAsync();
+            var equipoDtos = new List<EquipoDto>();
 
-            var dto = equipos.Select(e => new EquipoDto(
-                e.Nombre,
-                e.Localidad?.Nombre ?? string.Empty
+            foreach (var equipo in equipos)
+            {
+                var localidad = await _localidadService.GetByIdAsync(equipo.id_Localidad);
+                equipoDtos.Add(new EquipoDto(
+                    equipo.id_Equipo,
+                    equipo.Nombre,
+                    localidad?.Nombre ?? string.Empty,
+                    localidad.id_Localidad,
+                    equipo.url_imagen
                 ));
-            return Ok(dto);
+            }
+
+            return Ok(equipoDtos);
         }
 
         [HttpGet("{id}")]
@@ -37,13 +48,19 @@ namespace tablero_api.Controllers
             var equipo = await _service.GetByIdAsync(id);
             if (equipo == null)
                 return NotFound();
+                
+            var localidad = await _localidadService.GetByIdAsync(equipo.id_Localidad);
 
             var dto = new EquipoDto
-            (
+            (   
+                equipo.id_Equipo,
                 equipo.Nombre,
-                equipo.Localidad?.Nombre ?? string.Empty
+                localidad?.Nombre ?? string.Empty,
+                localidad.id_Localidad,
+                equipo.url_imagen
+
             );
-            return Ok(equipo);
+            return Ok(dto);
         }
 
         [HttpPost]
@@ -57,6 +74,20 @@ namespace tablero_api.Controllers
             await _service.CreateAsync(equipo);
             return Ok("Equipo agregado");
         }
+
+        [HttpPatch]
+        public async Task<IActionResult> Patch([FromBody] EquipoImageDto dto)
+        {
+            var equipo = await _service.GetByIdAsync(dto.id_Equipo);
+            {
+                equipo.url_imagen = dto.url;
+            }
+            await _service.UpdateAsync(equipo);
+            {
+                return Ok("Imagen agregada");
+            }
+        }
+        
         [HttpPut]
         public async Task<IActionResult> Put(int id, [FromBody] UpdateEquipoDto? equipoDto)
         {
@@ -84,5 +115,28 @@ namespace tablero_api.Controllers
             return Ok("Jugador eliminado");
         }
 
+        
+        [HttpGet("Paginado")]
+        public async Task<Pagina<EquipoDto>> GetEquiposAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
+        {
+            var todos = await _service.GetAllAsync();
+            var equipos = await _service.GetValuePerPage(pagina, tamanio);
+            List<EquipoDto> eq = new List<EquipoDto>();
+
+            foreach (Equipo i in equipos)
+            {
+                var localidad = await _localidadService.GetByIdAsync(i.id_Localidad);
+                eq.Add(new EquipoDto(i.id_Equipo, i.Nombre, localidad?.Nombre ?? string.Empty, localidad.id_Localidad, i.url_imagen ));
+            }
+
+            return new Pagina<EquipoDto>
+            {
+                Items = eq,
+                PaginaActual = pagina,
+                TotalPaginas = (int)Math.Ceiling(todos.Count() / (double)tamanio),
+                TotalRegistros = todos.Count()
+            };
+        }
+        
     }
 }

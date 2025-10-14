@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
-using tablero_api.Services;
 using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Controllers
@@ -16,14 +15,14 @@ namespace tablero_api.Controllers
         private readonly IService<Rol> _rolService;
         private readonly IService<Permiso> _permisoService;
 
-        public RolController(IService<Rol> rolService,IService<Permiso> permisoService)
+        public RolController(IService<Rol> rolService, IService<Permiso> permisoService)
         {
             _rolService = rolService;
             _permisoService = permisoService;
-
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<RolDto>>> Get()
         {
             var roles = await _rolService.GetAllAsync();
@@ -38,8 +37,9 @@ namespace tablero_api.Controllers
                 return NotFound();
 
             var roldto = new RolDto(
+                rol.Id_Rol,
                 rol.Nombre
-                );
+            );
             return Ok(roldto);
         }
 
@@ -81,6 +81,7 @@ namespace tablero_api.Controllers
             await _rolService.DeleteAsync(id);
             return Ok("Rol eliminado");
         }
+
         [HttpPost("{rolId}/permisos")]
         public async Task<IActionResult> AsignarPermisos(int rolId, [FromBody] List<int> permisosIds)
         {
@@ -88,7 +89,7 @@ namespace tablero_api.Controllers
             if (rol == null)
                 return NotFound("Rol no encontrado");
 
-            rol.Permisos.Clear(); 
+            rol.Permisos.Clear();
 
             foreach (var permisoId in permisosIds)
             {
@@ -100,6 +101,7 @@ namespace tablero_api.Controllers
             await _rolService.UpdateAsync(rol);
             return Ok("Permisos asignados al rol");
         }
+
         [HttpDelete("{rolId}/permisos/{permisoId}")]
         public async Task<IActionResult> QuitarPermiso(int rolId, int permisoId)
         {

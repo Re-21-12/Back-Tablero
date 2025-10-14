@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
@@ -14,52 +15,127 @@ namespace tablero_api.Controllers
         private readonly IService<Partido> _partidoService;
         private readonly IService<Equipo> _equipoService;
         private readonly IService<Localidad> _localidadService;
+        private readonly IService<Cuarto> _cuartoService;
 
 
-        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice)
+        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice, IService<Cuarto> cuartoService)
         {
             _partidoService = partidoService;
             _equipoService = equipoService;
             _localidadService = localidadSerice;
+            _cuartoService = cuartoService;
 
         }
+        [HttpGet("Resultado")]
+        public async Task<ActionResult<IEnumerable<PartidoResultadoDto>>> GetPartidosConResultado()
+        {
+            var partidos = await _partidoService.GetAllAsync();
+            var cuartos = await _cuartoService.GetAllAsync();
+            var equipos = await _equipoService.GetAllAsync(); // Trae todos de una vez
+
+            var partidoResultados = partidos.Select(p =>
+            {
+                var cuartosPartido = cuartos.Where(c => c.id_Partido == p.id_Partido);
+
+                int total_local = cuartosPartido
+                    .Where(c => c.id_Equipo == p.id_Local)
+                    .Sum(c => c.Total_Punteo);
+
+                int total_visitante = cuartosPartido
+                    .Where(c => c.id_Equipo == p.id_Visitante)
+                    .Sum(c => c.Total_Punteo);
+
+                var local = equipos.FirstOrDefault(e => e.id_Equipo == p.id_Local);
+                var visitante = equipos.FirstOrDefault(e => e.id_Equipo == p.id_Visitante);
+
+                return new PartidoResultadoDto(
+                    p.id_Partido,
+                    local?.Nombre ?? "Desconocido",
+                    visitante?.Nombre ?? "Desconocido",
+                    
+                    new ResultadoDto(p.id_Partido, total_local, total_visitante),
+                    fecha: p.FechaHora
+                );
+            }).ToList();
+
+            return Ok(partidoResultados);
+        }
+
+
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PartidoDto>>> Get()
         {
             var partidos = await _partidoService.GetAllAsync();
+            var partidosDto = new List<PartidoDto>();
 
-            var result = partidos.Select(p => new PartidoDto(
-                p.FechaHora,
-                p.id_Localidad,
-                p.id_Local,
-                p.id_Visitante
-            ));
-            return Ok(result);
+            foreach (var partido in partidos)
+            {
+                var equipoLocal = await _equipoService.GetByIdAsync(partido.id_Local);
+                var equipoVisitante = await _equipoService.GetByIdAsync(partido.id_Visitante);
+                
+                partidosDto.Add(new PartidoDto(
+                    partido.FechaHora,
+                    partido.id_Localidad,
+                    partido.id_Local,
+                    partido.id_Visitante,
+                    equipoLocal?.Nombre ?? "Desconocido",
+                    equipoVisitante?.Nombre ?? "Desconocido"
+                ));
+            }
+
+            return Ok(partidosDto);
         }
+        [HttpGet("Paginado")]
+        public async Task<ActionResult<Pagina<PartidoDto>>> GetPartidosPerPage([FromQuery] int pagina, [FromQuery] int tamanio)
+        {
+            var todos = await _partidoService.GetAllAsync();
+            var result = await _partidoService.GetValuePerPage(pagina, tamanio);
+            var equipos = await _equipoService.GetAllAsync();
+            
+            List<PartidoDto> dtos = new List<PartidoDto>();
+            foreach(Partido p in result)
+            {
+               
+                   
+                var visitante = (from e in equipos
+                                where e.id_Equipo == p.id_Visitante
+                                select e.Nombre)
+                                .FirstOrDefault();
+                var local = (from e in equipos
+                            where e.id_Equipo == p.id_Local
+                            select e.Nombre)
+                            .FirstOrDefault();
 
+                dtos.Add(new PartidoDto(p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString())) ;
+
+            }
+
+
+            return new Pagina<PartidoDto>
+            {
+                Items = dtos,
+                PaginaActual = pagina,
+                TotalPaginas = (int)Math.Ceiling(todos.Count() / (double)tamanio),
+                TotalRegistros = todos.Count()
+            };
+        }
         [HttpGet("{id}")]
-        public async Task<ActionResult<PartidoDto>> Get(int id)
+        public async Task<ActionResult<ResponsePartidoDto>> Get(int id)
         {
             var partido = await _partidoService.GetByIdAsync(id);
             if (partido == null)
                 return NotFound();
 
-
-            var dto = new PartidoDto(
-                partido.FechaHora,
-                partido.id_Localidad,
-                partido.id_Local,
-                partido.id_Visitante
-            );
             var equipoLocalNombre = await _equipoService.GetByIdAsync(partido.id_Local);
             var equipoVisitanteNombre = await _equipoService.GetByIdAsync(partido.id_Visitante);
             var localidad = await _localidadService.GetByIdAsync(partido.id_Localidad);
+            
             var dtoResponse = new ResponsePartidoDto(
-                dto.FechaHora,
-                localidad != null ? localidad.Nombre : "Desconocida",
-                equipoLocalNombre != null ? equipoLocalNombre.Nombre : "Desconocido",
-                equipoVisitanteNombre != null ? equipoVisitanteNombre.Nombre : "Desconocido"
+                partido.FechaHora,
+                localidad?.Nombre ?? "Desconocida",
+                equipoLocalNombre?.Nombre ?? "Desconocido",
+                equipoVisitanteNombre?.Nombre ?? "Desconocido"
             );
             return Ok(dtoResponse);
         }
@@ -68,7 +144,12 @@ namespace tablero_api.Controllers
         public async Task<IActionResult> Post([FromBody] CreatePartidoDto dto)
         {
             var equipoLocal = await _equipoService.GetByIdAsync(dto.id_Local);
+            if (equipoLocal == null)
+                return BadRequest("Equipo local no encontrado");
+                
             var localidad = await _localidadService.GetByIdAsync(equipoLocal.id_Localidad);
+            if (localidad == null)
+                return BadRequest("Localidad no encontrada");
 
             var partido = new Partido
             {
@@ -81,31 +162,34 @@ namespace tablero_api.Controllers
             return CreatedAtAction(nameof(Get), new { id = creado.id_Partido }, new { id = creado.id_Partido });
         }
 
-        [HttpPut ("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody]  UpdatePartidoDto partidoDto)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] UpdatePartidoDto partidoDto)
         {
             var partido = await _partidoService.GetByIdAsync(id);
             if (partido == null)
                 return BadRequest("ID no encontrado");
 
-            var mapPartido = new Partido
+            // Actualizar las propiedades del partido existente
+            partido.FechaHora = partidoDto.FechaHora;
+            partido.id_Local = partidoDto.id_Local;
+            partido.id_Visitante = partidoDto.id_visitante;
+
+            // Obtener la localidad del equipo local actualizado
+            var equipoLocal = await _equipoService.GetByIdAsync(partidoDto.id_Local);
+            if (equipoLocal != null)
             {
-             
-                FechaHora = partidoDto.FechaHora,
-                id_Local = partidoDto.id_Local,
-                id_Visitante = partidoDto.id_visitante
-            };
+                partido.id_Localidad = equipoLocal.id_Localidad;
+            }
 
-            var actualizado = await _partidoService.UpdateAsync(mapPartido);
+            var actualizado = await _partidoService.UpdateAsync(partido);
             return Ok("Partido Actualizado");
-
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             var partido = await _partidoService.GetByIdAsync(id);
-                if (partido == null)
+            if (partido == null)
                 return NotFound();
 
             await _partidoService.DeleteAsync(id);

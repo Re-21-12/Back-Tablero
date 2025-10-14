@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tablero_api.Data;
 
@@ -11,9 +12,11 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250916013834_JugadorAmplificado")]
+    partial class JugadorAmplificado
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,21 @@ namespace tablero_api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("PermisoRol", b =>
+                {
+                    b.Property<int>("PermisosId_Permiso")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RolesId_Rol")
+                        .HasColumnType("int");
+
+                    b.HasKey("PermisosId_Permiso", "RolesId_Rol");
+
+                    b.HasIndex("RolesId_Rol");
+
+                    b.ToTable("RolPermisos", (string)null);
+                });
 
             modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
@@ -120,12 +138,6 @@ namespace tablero_api.Migrations
                     b.Property<int>("Edad")
                         .HasColumnType("int");
 
-                    b.Property<float>("Estatura")
-                        .HasColumnType("real");
-
-                    b.Property<string>("Nacionalidad")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -142,6 +154,9 @@ namespace tablero_api.Migrations
 
                     b.Property<int>("UpdatedBy")
                         .HasColumnType("int");
+
+                    b.Property<float>("estatura")
+                        .HasColumnType("real");
 
                     b.Property<int>("id_Equipo")
                         .HasColumnType("int");
@@ -215,9 +230,6 @@ namespace tablero_api.Migrations
                     b.Property<int>("CreatedBy")
                         .HasColumnType("int");
 
-                    b.Property<int>("Id_Rol")
-                        .HasColumnType("int");
-
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -229,8 +241,6 @@ namespace tablero_api.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id_Permiso");
-
-                    b.HasIndex("Id_Rol");
 
                     b.ToTable("Permisos");
                 });
@@ -342,6 +352,21 @@ namespace tablero_api.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("PermisoRol", b =>
+                {
+                    b.HasOne("tablero_api.Models.Permiso", null)
+                        .WithMany()
+                        .HasForeignKey("PermisosId_Permiso")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("tablero_api.Models.Rol", null)
+                        .WithMany()
+                        .HasForeignKey("RolesId_Rol")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
                     b.HasOne("tablero_api.Models.Equipo", "Equipo")
@@ -410,17 +435,6 @@ namespace tablero_api.Migrations
                     b.Navigation("localidad");
                 });
 
-            modelBuilder.Entity("tablero_api.Models.Permiso", b =>
-                {
-                    b.HasOne("tablero_api.Models.Rol", "Rol")
-                        .WithMany("Permisos")
-                        .HasForeignKey("Id_Rol")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Rol");
-                });
-
             modelBuilder.Entity("tablero_api.Models.RefreshToken", b =>
                 {
                     b.HasOne("tablero_api.Models.Usuario", "Usuario")
@@ -450,8 +464,6 @@ namespace tablero_api.Migrations
 
             modelBuilder.Entity("tablero_api.Models.Rol", b =>
                 {
-                    b.Navigation("Permisos");
-
                     b.Navigation("Usuarios");
                 });
 #pragma warning restore 612, 618

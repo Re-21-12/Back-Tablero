@@ -13,10 +13,10 @@ services:
       - server
 
   backend:
-    image: revic2112/back-tablero-desarrolloweb:latest
+    image: revic2112/back-tablero-desarrolloweb:tagname
 
     ports:
-      - "8080:80"
+      - "5000:8080"
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - DOTNET_RUNNING_IN_CONTAINER=true
@@ -53,17 +53,6 @@ services:
     volumes:
       - ./script:/scripts
     entrypoint: /bin/bash -c "sleep 15; /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P YourStrong!Passw0rd -i /scripts/init.sql"
-    networks:
-      - server
-
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.migrate
-    depends_on:
-      - sqlserver
-    environment:
-      - ConnectionStrings__Default=Server=sqlserver,1433;Database=Tablero_DB;User Id=appuser;Password=AppUserPass!2025;TrustServerCertificate=true;
     networks:
       - server
 

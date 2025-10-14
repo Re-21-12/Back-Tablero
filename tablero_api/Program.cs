@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
 using tablero_api.Data;
 using tablero_api.Repositories;
@@ -24,7 +25,34 @@ namespace tablero_api
             });
 
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                // Configuración para soportar JWT Bearer en Swagger
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    In = ParameterLocation.Header,
+                    Description = "Introduce el token JWT con el prefijo 'Bearer '. Ejemplo: Bearer {token}"
+                });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -35,12 +63,9 @@ namespace tablero_api
                 return new CryptoHelper(key, iv);
             });
 
-
-
-
             // EF Core + SQL Server
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection1")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
             // Dependencias
@@ -60,7 +85,10 @@ namespace tablero_api
                         "https://proy-analisis-re2112.duckdns.org",
                         "http://frontend:4200",
                         "http://157.180.19.137:4200",
-                        "http://157.180.19.137"
+                        "http://157.180.19.137",
+    "http://vmacarioe1_umg.com.gt:4200"
+
+
 
                     )
                     .AllowAnyHeader()
@@ -102,12 +130,8 @@ namespace tablero_api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
             // Apply DB migration and seed data
-            //using (var scope = app.Services.CreateScope())
-            //{
-            //    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            //    db.Database.Migrate();
-           // }
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -119,11 +143,6 @@ namespace tablero_api
             app.UseAuthorization();
             app.MapControllers();
             app.Run();
-
-            
-
-
-
         }
     }
 }
