@@ -83,7 +83,7 @@ namespace tablero_api
                 {
                     policy.WithOrigins(
                         "http://localhost:4200",
-                        "http://127.0.0.1:5000",
+                        "http://127.0.0.1:5001",
                         "https://front-analisis-registros.netlify.app",
                         "https://proy-analisis-re2112.duckdns.org",
                         "http://frontend:4200",

@@ -75,7 +75,7 @@ namespace tablero_api.Controllers
         [HttpGet("reporte")]
         public async Task<IActionResult> GetReporte()
         {
-            string python_string = "http://127.0.0.1:5000/Reporte/Equipos";
+            string python_string = "http://127.0.0.1:5001/Reporte/Equipos";
             var todos = await _service.GetAllAsync();
             var equipoDtos = new List<EquipoDto>();
 
