@@ -7,6 +7,7 @@ using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Services
 {
+    // prueba
     public class AdminService : IAdminService
     {
         private readonly HttpClient _httpClient;
@@ -245,7 +246,7 @@ namespace tablero_api.Services
             {
                 // Construir la URL con los nombres de permisos como parámetro de path
                 var permissionNamesParam = string.Join(",", permissionNames);
-                
+
                 // Endpoint: POST /keycloak/permissions/roles/{parentRoleName}/{permissionNames}
                 var response = await _httpClient.PostAsync($"/keycloak/permissions/roles/{parentRoleName}/{permissionNamesParam}", null);
                 return response.IsSuccessStatusCode;
