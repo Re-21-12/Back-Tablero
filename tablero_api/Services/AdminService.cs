@@ -7,7 +7,6 @@ using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Services
 {
-    // prueba
     public class AdminService : IAdminService
     {
         private readonly HttpClient _httpClient;
