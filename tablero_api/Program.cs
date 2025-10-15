@@ -27,7 +27,7 @@ namespace tablero_api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                // Configuración para soportar JWT Bearer en Swagger
+                // Configuraciï¿½n para soportar JWT Bearer en Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -83,7 +83,7 @@ namespace tablero_api
                 {
                     policy.WithOrigins(
                         "http://localhost:4200",
-                        "http://127.0.0.1:8000",
+                        "http://127.0.0.1:5000",
                         "https://front-analisis-registros.netlify.app",
                         "https://proy-analisis-re2112.duckdns.org",
                         "http://frontend:4200",

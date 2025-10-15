@@ -59,7 +59,7 @@ namespace tablero_api.Controllers
                     p.id_Partido,
                     local?.Nombre ?? "Desconocido",
                     visitante?.Nombre ?? "Desconocido",
-                    
+
                     new ResultadoDto(p.id_Partido, total_local, total_visitante),
                     fecha: p.FechaHora
                 );
@@ -80,7 +80,7 @@ namespace tablero_api.Controllers
             {
                 var equipoLocal = await _equipoService.GetByIdAsync(partido.id_Local);
                 var equipoVisitante = await _equipoService.GetByIdAsync(partido.id_Visitante);
-                
+
                 partidosDto.Add(new PartidoDto(
                     partido.FechaHora,
                     partido.id_Localidad,
@@ -99,22 +99,22 @@ namespace tablero_api.Controllers
             var todos = await _partidoService.GetAllAsync();
             var result = await _partidoService.GetValuePerPage(pagina, tamanio);
             var equipos = await _equipoService.GetAllAsync();
-            
+
             List<PartidoDto> dtos = new List<PartidoDto>();
-            foreach(Partido p in result)
+            foreach (Partido p in result)
             {
-               
-                   
+
+
                 var visitante = (from e in equipos
-                                where e.id_Equipo == p.id_Visitante
-                                select e.Nombre)
+                                 where e.id_Equipo == p.id_Visitante
+                                 select e.Nombre)
                                 .FirstOrDefault();
                 var local = (from e in equipos
-                            where e.id_Equipo == p.id_Local
-                            select e.Nombre)
+                             where e.id_Equipo == p.id_Local
+                             select e.Nombre)
                             .FirstOrDefault();
 
-                dtos.Add(new PartidoDto(p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString())) ;
+                dtos.Add(new PartidoDto(p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString()));
 
             }
 
@@ -137,7 +137,7 @@ namespace tablero_api.Controllers
             var equipoLocalNombre = await _equipoService.GetByIdAsync(partido.id_Local);
             var equipoVisitanteNombre = await _equipoService.GetByIdAsync(partido.id_Visitante);
             var localidad = await _localidadService.GetByIdAsync(partido.id_Localidad);
-            
+
             var dtoResponse = new ResponsePartidoDto(
                 partido.FechaHora,
                 localidad?.Nombre ?? "Desconocida",
@@ -150,7 +150,7 @@ namespace tablero_api.Controllers
         public async Task<ActionResult<ReportePartidoDto>> GetReporte()
         {
 
-            string python_string = "http://127.0.0.1:8000/Reporte/Partidos";
+            string python_string = "http://127.0.0.1:5000/Reporte/Partidos";
             var partidos = await _partidoService.GetAllAsync();
             var cuartos = await _cuartoService.GetAllAsync();
             var equipos = await _equipoService.GetAllAsync(); // Trae todos de una vez
@@ -179,10 +179,10 @@ namespace tablero_api.Controllers
                     fecha: p.FechaHora
                 );
             }).ToList();
-            
 
 
-           
+
+
 
             var json = JsonSerializer.Serialize(partidoResultados);
             using var doc = JsonDocument.Parse(json);
@@ -201,7 +201,7 @@ namespace tablero_api.Controllers
 
 
         }
-        
+
 
 
         [HttpPost]
@@ -210,7 +210,7 @@ namespace tablero_api.Controllers
             var equipoLocal = await _equipoService.GetByIdAsync(dto.id_Local);
             if (equipoLocal == null)
                 return BadRequest("Equipo local no encontrado");
-                
+
             var localidad = await _localidadService.GetByIdAsync(equipoLocal.id_Localidad);
             if (localidad == null)
                 return BadRequest("Localidad no encontrada");
@@ -263,22 +263,22 @@ namespace tablero_api.Controllers
         [HttpGet("Reporte/Roster")]
         public async Task<IActionResult> GetReportePartido([FromQuery] int id_partido)
         {
-            
+
             var partido = await _partidoService.GetByIdAsync(id_partido);
             var equipo_local = await _equipoService.GetByIdAsync(partido.id_Local);
             var equipo_visitante = await _equipoService.GetByIdAsync(partido.id_Visitante);
             var localidad = await _localidadService.GetByIdAsync(partido.id_Localidad);
             var jugadores = await _jugadorService.GetAllAsync();
             var jugadores_local = new List<JugadorDto>();
-            var jugadores_visitante = new List<JugadorDto>() ;
+            var jugadores_visitante = new List<JugadorDto>();
 
             foreach (Jugador j in jugadores)
             {
                 if (j.id_Equipo == equipo_local.id_Equipo)
                 {
-                    jugadores_local.Add( new JugadorDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, j.id_Equipo));
+                    jugadores_local.Add(new JugadorDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, j.id_Equipo));
                 }
-                if(j.id_Equipo == equipo_visitante.id_Equipo)
+                if (j.id_Equipo == equipo_visitante.id_Equipo)
                 {
                     jugadores_visitante.Add(new JugadorDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, j.id_Equipo));
                 }
@@ -289,7 +289,7 @@ namespace tablero_api.Controllers
             {
                 partido_info = new
                 {
-                    
+
                     partido.id_Local,
                     partido.id_Visitante,
                     partido.FechaHora,
@@ -300,13 +300,13 @@ namespace tablero_api.Controllers
                 jugadores_locales = jugadores_local,
                 jugadores_visitantes = jugadores_visitante
             };
-            
+
             var json = JsonSerializer.Serialize(body);
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             Console.WriteLine(json);
 
-            var response = await _httpClient.PostAsync("http://127.0.0.1:8000/Reporte/Partido/Roster", content);
+            var response = await _httpClient.PostAsync("http://127.0.0.1:5000/Reporte/Partido/Roster", content);
 
             if (!response.IsSuccessStatusCode)
             {

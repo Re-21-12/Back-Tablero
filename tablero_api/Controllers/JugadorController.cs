@@ -35,8 +35,9 @@ namespace tablero_api.Controllers
             var equipo = await _EquipoService.GetByIdAsync(id_equipo);
             var jugadores = await _service.GetAllAsync();
             List<JugadorDto> ret = new List<JugadorDto>();
-            foreach(Jugador j in jugadores){
-                if(j.id_Equipo == id_equipo)
+            foreach (Jugador j in jugadores)
+            {
+                if (j.id_Equipo == id_equipo)
                 {
                     ret.Add(new JugadorDto(j.Nombre, j.Apellido, j.Estatura, j.Posicion, j.Nacionalidad, j.Edad, j.id_Equipo));
                 }
@@ -67,11 +68,11 @@ namespace tablero_api.Controllers
         [HttpGet("Reporte/Equipo")]
         public async Task<IActionResult> GetReporte([FromQuery] int id_equipo)
         {
-            string python_string = "http://127.0.0.1:8000/Reporte/Jugadores";
+            string python_string = "http://127.0.0.1:5000/Reporte/Jugadores";
             var todos = await _service.GetAllAsync();
             var equipo = await _EquipoService.GetByIdAsync(id_equipo);
             var jugadores = new List<JugadorDto>();
-            python_string = python_string+ "?equipo=" + equipo.Nombre;
+            python_string = python_string + "?equipo=" + equipo.Nombre;
 
 
             foreach (Jugador j in todos)
@@ -95,7 +96,7 @@ namespace tablero_api.Controllers
             var pdfBytes = await response.Content.ReadAsByteArrayAsync();
 
 
-            return File(pdfBytes, "application/pdf", "reporte_jugadores_"+equipo.Nombre+".pdf");
+            return File(pdfBytes, "application/pdf", "reporte_jugadores_" + equipo.Nombre + ".pdf");
         }
 
         [HttpGet("{id}")]
@@ -116,7 +117,7 @@ namespace tablero_api.Controllers
             );
             return Ok(dto);
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreateJugadorDto jugador)
         {
@@ -171,7 +172,7 @@ namespace tablero_api.Controllers
             await _service.DeleteAsync(id);
             return Ok("Jugador eliminado");
         }
-        
+
         [HttpGet("Paginado")]
         public async Task<Pagina<JugadorPaginaDto>> GetLocalidadAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
         {
@@ -184,12 +185,12 @@ namespace tablero_api.Controllers
                 var eq = await _EquipoService.GetByIdAsync(j.id_Equipo);
                 jg.Add(new JugadorPaginaDto(
                     j.id_Jugador,
-                    j.Nombre, 
-                    j.Apellido, 
+                    j.Nombre,
+                    j.Apellido,
                     j.Estatura,        // Orden correcto: tercera posición
                     j.Posicion,        // Cuarta posición
-                    j.Nacionalidad, 
-                    j.Edad, 
+                    j.Nacionalidad,
+                    j.Edad,
                     j.id_Equipo
                 ));
             }
@@ -205,17 +206,17 @@ namespace tablero_api.Controllers
         [HttpGet("Reporte/EstadisticasJugador")]
         public async Task<IActionResult> GetEstadisticasJugador([FromQuery] int id_jugador)
         {
-            
-            string pythonUrl = "http://127.0.0.1:8000/Reporte/Estadistica/Jugador";
 
-            
+            string pythonUrl = "http://127.0.0.1:5000/Reporte/Estadistica/Jugador";
+
+
             var jugador = await _service.GetByIdAsync(id_jugador);
             var faltas = await _faltas.GetAllAsync();
             var anotaciones = await _anotaciones.GetAllAsync();
             var jugadorFaltas = faltas.Where(f => f.id_jugador == id_jugador).ToList();
             var jugadorAnotaciones = anotaciones.Where(a => a.id_jugador == id_jugador).ToList();
 
-            
+
             var payload = new
             {
                 jugador = new
@@ -240,11 +241,11 @@ namespace tablero_api.Controllers
                 })
             };
 
-            
+
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-          
+
             var response = await _httpClient.PostAsync(pythonUrl, content);
 
             if (!response.IsSuccessStatusCode)
@@ -253,10 +254,10 @@ namespace tablero_api.Controllers
                 return BadRequest($"Error del servicio Python: {errorMsg}");
             }
 
-            
+
             var pdfBytes = await response.Content.ReadAsByteArrayAsync();
 
-            
+
             return File(pdfBytes, "application/pdf", $"estadisticas_jugador_{jugador.Nombre}_{jugador.Apellido}.pdf");
         }
 

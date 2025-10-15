@@ -20,7 +20,7 @@ namespace tablero_api.Controllers
         private readonly IService<Equipo> _service;
         private readonly IService<Localidad> _localidadService;
         private readonly HttpClient _httpClient;
-         
+
 
 
         public EquipoController(IService<Equipo> service, IService<Localidad> localidadService, HttpClient httpClient)
@@ -58,11 +58,11 @@ namespace tablero_api.Controllers
             var equipo = await _service.GetByIdAsync(id);
             if (equipo == null)
                 return NotFound();
-                
+
             var localidad = await _localidadService.GetByIdAsync(equipo.id_Localidad);
 
             var dto = new EquipoDto
-            (   
+            (
                 equipo.id_Equipo,
                 equipo.Nombre,
                 localidad?.Nombre ?? string.Empty,
@@ -75,12 +75,12 @@ namespace tablero_api.Controllers
         [HttpGet("reporte")]
         public async Task<IActionResult> GetReporte()
         {
-            string python_string = "http://127.0.0.1:8000/Reporte/Equipos";
-            var todos = await  _service.GetAllAsync();
+            string python_string = "http://127.0.0.1:5000/Reporte/Equipos";
+            var todos = await _service.GetAllAsync();
             var equipoDtos = new List<EquipoDto>();
-            
-            
-            
+
+
+
             JsonElement listaEquipos;
             foreach (var equipo in todos)
             {
@@ -105,7 +105,7 @@ namespace tablero_api.Controllers
             }
             var pdfBytes = await response.Content.ReadAsByteArrayAsync();
 
-           
+
             return File(pdfBytes, "application/pdf", "reporte_equipos.pdf");
         }
         [HttpPost]
@@ -132,7 +132,7 @@ namespace tablero_api.Controllers
                 return Ok("Imagen agregada");
             }
         }
-        
+
         [HttpPut]
         public async Task<IActionResult> Put(int id, [FromBody] UpdateEquipoDto? equipoDto)
         {
@@ -144,10 +144,10 @@ namespace tablero_api.Controllers
             {
                 Nombre = equipoDto.Nombre,
                 id_Localidad = equipoDto.id_Localidad
-            }; 
+            };
 
             var actualizado = await _service.UpdateAsync(mapEquipo);
-                return Ok(actualizado);
+            return Ok(actualizado);
         }
 
         [HttpDelete("{id}")]
@@ -160,7 +160,7 @@ namespace tablero_api.Controllers
             return Ok("Jugador eliminado");
         }
 
-        
+
         [HttpGet("Paginado")]
         public async Task<Pagina<EquipoDto>> GetEquiposAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
         {
@@ -171,7 +171,7 @@ namespace tablero_api.Controllers
             foreach (Equipo i in equipos)
             {
                 var localidad = await _localidadService.GetByIdAsync(i.id_Localidad);
-                eq.Add(new EquipoDto(i.id_Equipo, i.Nombre, localidad?.Nombre ?? string.Empty, localidad.id_Localidad, i.url_imagen ));
+                eq.Add(new EquipoDto(i.id_Equipo, i.Nombre, localidad?.Nombre ?? string.Empty, localidad.id_Localidad, i.url_imagen));
             }
 
             return new Pagina<EquipoDto>
@@ -182,6 +182,6 @@ namespace tablero_api.Controllers
                 TotalRegistros = todos.Count()
             };
         }
-        
+
     }
 }
