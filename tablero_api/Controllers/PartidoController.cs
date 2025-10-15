@@ -150,7 +150,7 @@ namespace tablero_api.Controllers
         public async Task<ActionResult<ReportePartidoDto>> GetReporte()
         {
 
-            string python_string = "http://127.0.0.1:5000/Reporte/Partidos";
+            string python_string = "http://127.0.0.1:5001/Reporte/Partidos";
             var partidos = await _partidoService.GetAllAsync();
             var cuartos = await _cuartoService.GetAllAsync();
             var equipos = await _equipoService.GetAllAsync(); // Trae todos de una vez
@@ -306,7 +306,7 @@ namespace tablero_api.Controllers
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             Console.WriteLine(json);
 
-            var response = await _httpClient.PostAsync("http://127.0.0.1:5000/Reporte/Partido/Roster", content);
+            var response = await _httpClient.PostAsync("http://127.0.0.1:5001/Reporte/Partido/Roster", content);
 
             if (!response.IsSuccessStatusCode)
             {

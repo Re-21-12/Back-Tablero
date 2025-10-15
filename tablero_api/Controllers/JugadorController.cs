@@ -68,7 +68,7 @@ namespace tablero_api.Controllers
         [HttpGet("Reporte/Equipo")]
         public async Task<IActionResult> GetReporte([FromQuery] int id_equipo)
         {
-            string python_string = "http://127.0.0.1:5000/Reporte/Jugadores";
+            string python_string = "http://127.0.0.1:5001/Reporte/Jugadores";
             var todos = await _service.GetAllAsync();
             var equipo = await _EquipoService.GetByIdAsync(id_equipo);
             var jugadores = new List<JugadorDto>();
@@ -207,7 +207,7 @@ namespace tablero_api.Controllers
         public async Task<IActionResult> GetEstadisticasJugador([FromQuery] int id_jugador)
         {
 
-            string pythonUrl = "http://127.0.0.1:5000/Reporte/Estadistica/Jugador";
+            string pythonUrl = "http://127.0.0.1:5001/Reporte/Estadistica/Jugador";
 
 
             var jugador = await _service.GetByIdAsync(id_jugador);
