@@ -82,6 +82,7 @@ namespace tablero_api.Controllers
                 var equipoVisitante = await _equipoService.GetByIdAsync(partido.id_Visitante);
 
                 partidosDto.Add(new PartidoDto(
+                    partido.id_Partido,
                     partido.FechaHora,
                     partido.id_Localidad,
                     partido.id_Local,
@@ -114,7 +115,7 @@ namespace tablero_api.Controllers
                              select e.Nombre)
                             .FirstOrDefault();
 
-                dtos.Add(new PartidoDto(p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString()));
+                dtos.Add(new PartidoDto(p.id_Partido,  p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString()));
 
             }
 
