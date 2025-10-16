@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
@@ -20,14 +21,14 @@ namespace tablero_api.Controllers
         private readonly IService<Equipo> _service;
         private readonly IService<Localidad> _localidadService;
         private readonly HttpClient _httpClient;
+        private readonly string _reportServiceBaseUrl;
 
-
-
-        public EquipoController(IService<Equipo> service, IService<Localidad> localidadService, HttpClient httpClient)
+        public EquipoController(IService<Equipo> service, IService<Localidad> localidadService, HttpClient httpClient, IConfiguration configuration)
         {
             _service = service;
             _localidadService = localidadService;
             _httpClient = httpClient;
+            _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
         }
 
 
@@ -75,13 +76,9 @@ namespace tablero_api.Controllers
         [HttpGet("reporte")]
         public async Task<IActionResult> GetReporte()
         {
-            string python_string = "http://127.0.0.1:5001/Reporte/Equipos";
             var todos = await _service.GetAllAsync();
             var equipoDtos = new List<EquipoDto>();
 
-
-
-            JsonElement listaEquipos;
             foreach (var equipo in todos)
             {
                 var localidad = await _localidadService.GetByIdAsync(equipo.id_Localidad);
@@ -93,10 +90,13 @@ namespace tablero_api.Controllers
                     equipo.url_imagen
                 ));
             }
+
             var json = JsonSerializer.Serialize(equipoDtos);
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Construye la URL a partir de la base en appsettings
+            var python_string = $"{_reportServiceBaseUrl.TrimEnd('/')}/Reporte/Equipos";
+
             var response = await _httpClient.PostAsync(python_string, content);
             if (!response.IsSuccessStatusCode)
             {

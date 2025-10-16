@@ -8,6 +8,7 @@ using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services;
 using tablero_api.Services.Interfaces;
+using Microsoft.Extensions.Configuration; // <-- agregado
 
 namespace tablero_api.Controllers
 {
@@ -22,9 +23,10 @@ namespace tablero_api.Controllers
         private readonly IService<Cuarto> _cuartoService;
         private readonly IService<Jugador> _jugadorService;
         private readonly HttpClient _httpClient;
+        private readonly string _reportServiceBaseUrl; // <-- agregado
 
 
-        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice, IService<Cuarto> cuartoService, HttpClient httpClient, IService<Jugador> jugadorService)
+        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice, IService<Cuarto> cuartoService, HttpClient httpClient, IService<Jugador> jugadorService, IConfiguration configuration)
         {
             _partidoService = partidoService;
             _equipoService = equipoService;
@@ -32,6 +34,7 @@ namespace tablero_api.Controllers
             _cuartoService = cuartoService;
             _jugadorService = jugadorService;
             _httpClient = httpClient;
+            _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
         }
         [HttpGet("Resultado")]
         public async Task<ActionResult<IEnumerable<PartidoResultadoDto>>> GetPartidosConResultado()
@@ -115,7 +118,7 @@ namespace tablero_api.Controllers
                              select e.Nombre)
                             .FirstOrDefault();
 
-                dtos.Add(new PartidoDto(p.id_Partido,  p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString()));
+                dtos.Add(new PartidoDto(p.id_Partido, p.FechaHora, p.id_Localidad, p.id_Local, p.id_Visitante, local.ToString(), visitante.ToString()));
 
             }
 
@@ -151,7 +154,6 @@ namespace tablero_api.Controllers
         public async Task<ActionResult<ReportePartidoDto>> GetReporte()
         {
 
-            string python_string = "http://127.0.0.1:5001/Reporte/Partidos";
             var partidos = await _partidoService.GetAllAsync();
             var cuartos = await _cuartoService.GetAllAsync();
             var equipos = await _equipoService.GetAllAsync(); // Trae todos de una vez
@@ -181,14 +183,14 @@ namespace tablero_api.Controllers
                 );
             }).ToList();
 
-
-
-
-
             var json = JsonSerializer.Serialize(partidoResultados);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Usar base URL desde appsettings
+            var python_string = $"{_reportServiceBaseUrl.TrimEnd('/')}/Reporte/Partidos";
+
             var response = await _httpClient.PostAsync(python_string, content);
             if (!response.IsSuccessStatusCode)
             {
@@ -307,7 +309,9 @@ namespace tablero_api.Controllers
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             Console.WriteLine(json);
 
-            var response = await _httpClient.PostAsync("http://127.0.0.1:5001/Reporte/Partido/Roster", content);
+            // Usar base URL desde appsettings
+            var rosterUrl = $"{_reportServiceBaseUrl.TrimEnd('/')}/Reporte/Partido/Roster";
+            var response = await _httpClient.PostAsync(rosterUrl, content);
 
             if (!response.IsSuccessStatusCode)
             {

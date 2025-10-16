@@ -7,6 +7,7 @@ using tablero_api.Migrations;
 using tablero_api.Models;
 using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
+using Microsoft.Extensions.Configuration; // <-- agregado
 
 namespace tablero_api.Controllers
 {
@@ -20,14 +21,16 @@ namespace tablero_api.Controllers
         private readonly IService<Falta> _faltas;
         private readonly IService<Anotacion> _anotaciones;
         private readonly HttpClient _httpClient;
+        private readonly string _reportServiceBaseUrl; // <-- agregado
 
-        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService, HttpClient httpClient, IService<Falta> faltas, IService<Anotacion> anotaciones)
+        public JugadorController(IService<Jugador> service, IService<Equipo> equipoService, HttpClient httpClient, IService<Falta> faltas, IService<Anotacion> anotaciones, IConfiguration configuration)
         {
             _service = service;
             _EquipoService = equipoService;
             _httpClient = httpClient;
             _faltas = faltas;
             _anotaciones = anotaciones;
+            _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
         }
         [HttpGet("byTeam/{id_equipo}")]
         public async Task<ActionResult<IEnumerable<JugadorDto>>> GetByTeam(int id_equipo)
@@ -68,12 +71,14 @@ namespace tablero_api.Controllers
         [HttpGet("Reporte/Equipo")]
         public async Task<IActionResult> GetReporte([FromQuery] int id_equipo)
         {
-            string python_string = "http://127.0.0.1:5001/Reporte/Jugadores";
+            var baseUrl = _reportServiceBaseUrl.TrimEnd('/');
             var todos = await _service.GetAllAsync();
             var equipo = await _EquipoService.GetByIdAsync(id_equipo);
-            var jugadores = new List<JugadorDto>();
-            python_string = python_string + "?equipo=" + equipo.Nombre;
+            if (equipo == null)
+                return NotFound("Equipo no encontrado");
 
+            var jugadores = new List<JugadorDto>();
+            var python_string = $"{baseUrl}/Reporte/Jugadores?equipo={Uri.EscapeDataString(equipo.Nombre)}";
 
             foreach (Jugador j in todos)
             {
@@ -206,16 +211,16 @@ namespace tablero_api.Controllers
         [HttpGet("Reporte/EstadisticasJugador")]
         public async Task<IActionResult> GetEstadisticasJugador([FromQuery] int id_jugador)
         {
-
-            string pythonUrl = "http://127.0.0.1:5001/Reporte/Estadistica/Jugador";
-
+            var pythonUrl = $"{_reportServiceBaseUrl.TrimEnd('/')}/Reporte/Estadistica/Jugador";
 
             var jugador = await _service.GetByIdAsync(id_jugador);
+            if (jugador == null)
+                return NotFound("Jugador no encontrado");
+
             var faltas = await _faltas.GetAllAsync();
             var anotaciones = await _anotaciones.GetAllAsync();
             var jugadorFaltas = faltas.Where(f => f.id_jugador == id_jugador).ToList();
             var jugadorAnotaciones = anotaciones.Where(a => a.id_jugador == id_jugador).ToList();
-
 
             var payload = new
             {
@@ -241,10 +246,8 @@ namespace tablero_api.Controllers
                 })
             };
 
-
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
 
             var response = await _httpClient.PostAsync(pythonUrl, content);
 
@@ -254,9 +257,7 @@ namespace tablero_api.Controllers
                 return BadRequest($"Error del servicio Python: {errorMsg}");
             }
 
-
             var pdfBytes = await response.Content.ReadAsByteArrayAsync();
-
 
             return File(pdfBytes, "application/pdf", $"estadisticas_jugador_{jugador.Nombre}_{jugador.Apellido}.pdf");
         }
