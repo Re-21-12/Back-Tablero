@@ -180,6 +180,22 @@ namespace tablero_api
                 });
             }
 
+            // Middleware añadido: permite que las rutas que empiezan con /swagger
+            // continúen sin bloquearlas por la autenticación global.
+            app.Use(async (context, next) =>
+            {
+                var path = context.Request.Path.Value ?? string.Empty;
+
+                if (path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Permite continuar sin autenticación
+                    await next.Invoke();
+                    return;
+                }
+
+                await next.Invoke();
+            });
+
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
