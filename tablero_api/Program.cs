@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using tablero_api.Data;
@@ -9,13 +10,21 @@ using tablero_api.Repositories.Interfaces;
 using tablero_api.Services;
 using tablero_api.Services.Interfaces;
 using tablero_api.Utils;
+using tablero_api.Models;
+using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
+using tablero_api.Extensions;
+using Microsoft.AspNetCore.Authorization; // agregado
+using DotNetEnv; // agregado
 
 namespace tablero_api
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
+            Env.Load();
+
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
@@ -27,7 +36,6 @@ namespace tablero_api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                // Configuraci�n para soportar JWT Bearer en Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -53,9 +61,12 @@ namespace tablero_api
                     }
                 });
             });
+
+            // Servicios y dependencias (sin cambios funcionales)
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddHttpClient();
             builder.Services.AddSingleton(provider =>
             {
                 string key = "62219311522870687600240042448129"; // 32 chars
@@ -63,79 +74,82 @@ namespace tablero_api
                 return new CryptoHelper(key, iv);
             });
 
-            // EF Core + SQL Server
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
-            // Dependencias
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
+            // Admin Service HttpClient y registro
+            builder.Services.AddHttpClient("AdminService", client =>
+            {
+                client.BaseAddress = new Uri("http://127.0.0.1:3000");
+            });
+            builder.Services.AddScoped<IAdminService, AdminService>(provider =>
+            {
+                var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+                var httpClient = httpClientFactory.CreateClient("AdminService");
+                var logger = provider.GetRequiredService<ILogger<AdminService>>();
+                return new AdminService(httpClient, logger);
+            });
 
             // CORS
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins(
-                        "http://localhost:4200",
-                        "https://front-analisis-registros.netlify.app",
-                        "https://proy-analisis-re2112.duckdns.org",
-                        "http://frontend:4200",
-                        "http://157.180.19.137:4200",
-                        "http://157.180.19.137",
-    "http://vmacarioe1_umg.com.gt:4200"
-
-
-
-                    )
+                    policy.WithOrigins(allowedOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 });
             });
-            var jwtSettings = builder.Configuration.GetSection("Jwt");
-            var keyBytes = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "YourSuperSecretKey123!");
-            //Authentication
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
-                };
-            });
 
-            builder.Services.AddAuthorization();
+            // AUTH: usar extensión que encapsula la configuración Keycloak/JWKS
+            builder.Services.AddKeycloakJwt(builder.Configuration);
+
+            // Forzar autorización global: solo usuarios autenticados (JWT/Keycloak) podrán acceder.
+            // Mantenerás excepciones explícitas con [AllowAnonymous] en controladores/acciones que lo requieran.
+            builder.Services.AddAuthorization(options =>
+            {
+                options.FallbackPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .Build();
+            });
 
             var app = builder.Build();
 
+            // Migraciones y seed
+            if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    db.Database.Migrate();
+                    try
+                    {
+                        await DataSeeder.SeedAsync(db);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                }
+            }
+            else
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    db.Database.Migrate();
+                }
+            }
+
             app.MapGet("/", () => "API funcionando");
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
-
-            // Apply DB migration and seed data
-            using (var scope = app.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.Database.Migrate();
             }
 
             app.UseCors("AllowFrontend");

@@ -9,5 +9,6 @@ namespace tablero_api.Repositories.Interfaces
         Task<Usuario?> GetByUsernameAsync(string nombre);
         Task<Usuario?> GetByIdAsync(int id);
         Task AddAsync(Usuario usuario);
+        Task UpdateAsync(Usuario usuario);
     }
 }

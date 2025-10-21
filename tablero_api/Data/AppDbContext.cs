@@ -19,6 +19,8 @@ namespace tablero_api.Data
         public DbSet<Rol> Roles => Set<Rol>();
         public DbSet<Jugador> Jugadores => Set<Jugador>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<Anotacion> Anotaciones => Set<Anotacion>();
+        public DbSet<Falta> Faltas => Set<Falta>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,6 +106,51 @@ namespace tablero_api.Data
                 .WithMany()
                 .HasForeignKey(rt => rt.UsuarioId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // --- Anotaciones ---
+            modelBuilder.Entity<Anotacion>()
+                .HasKey(a => a.id);
+
+            modelBuilder.Entity<Anotacion>()
+                .HasOne(a => a.cuarto)
+                .WithMany()
+                .HasForeignKey(a => a.id_cuarto)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Anotacion>()
+                .HasOne(a => a.jugador)
+                .WithMany()
+                .HasForeignKey(a => a.id_jugador)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Anotacion>()
+                .HasOne(a => a.partido)
+                .WithMany()
+                .HasForeignKey(a => a.id_partido)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // --- Faltas ---
+            modelBuilder.Entity<Falta>()
+                .HasKey(f => f.id);
+
+            modelBuilder.Entity<Falta>()
+                .HasOne(f => f.cuarto)
+                .WithMany()
+                .HasForeignKey(f => f.id_cuarto)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Falta>()
+                .HasOne(f => f.jugador)
+                .WithMany()
+                .HasForeignKey(f => f.id_jugador)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Falta>()
+                .HasOne(f => f.partido)
+                .WithMany()
+                .HasForeignKey(f => f.id_partido)
+                .OnDelete(DeleteBehavior.Cascade);
         }
+
     }
 }

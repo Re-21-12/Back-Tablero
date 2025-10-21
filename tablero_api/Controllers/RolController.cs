@@ -12,27 +12,26 @@ namespace tablero_api.Controllers
     [Authorize]
     public class RolController : ControllerBase
     {
-        private readonly IService<Rol> _rolService;
-        private readonly IService<Permiso> _permisoService;
+        private readonly IAdminService _adminService;
 
-        public RolController(IService<Rol> rolService, IService<Permiso> permisoService)
+        public RolController(IAdminService adminService) 
         {
-            _rolService = rolService;
-            _permisoService = permisoService;
+            _adminService = adminService;
         }
 
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<RolDto>>> Get()
         {
-            var roles = await _rolService.GetAllAsync();
-            return Ok(roles);
+            var roles = await _adminService.GetAllRolesAsync();
+            var rolesDto = roles.Select(r => new RolDto(r.Id_Rol, r.Nombre));
+            return Ok(rolesDto);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<RolDto>> Get(int id)
         {
-            var rol = await _rolService.GetByIdAsync(id);
+            var rol = await _adminService.GetRolByIdAsync(id);
             if (rol == null)
                 return NotFound();
 
@@ -44,77 +43,76 @@ namespace tablero_api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] RolDto rolDto)
+        public async Task<IActionResult> Post([FromBody] CreateRolDto rolDto)
         {
-            var rol = new Rol()
-            {
-                Nombre = rolDto.Nombre
-            };
-            var creado = await _rolService.CreateAsync(rol);
+            var creado = await _adminService.CreateRolAsync(rolDto);
             return CreatedAtAction(nameof(Get), new { id = creado.Id_Rol }, creado);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] RolDto roldto)
         {
-            var rol = _rolService.GetByIdAsync(id);
-            if (rol == null)
-                return BadRequest("El ID no coincide");
-
-            var Maprol = new Rol()
-            {
-                Id_Rol = id,
-                Nombre = roldto.Nombre
-            };
-
-            var actualizado = await _rolService.UpdateAsync(Maprol);
+            var actualizado = await _adminService.UpdateRolAsync(id, roldto);
             return Ok(actualizado);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var rol = await _rolService.GetByIdAsync(id);
-            if (rol == null)
-                return NotFound();
-
-            await _rolService.DeleteAsync(id);
+            var result = await _adminService.DeleteRolAsync(id);
+            if (!result)
+                return NotFound("Rol no encontrado");
+            
             return Ok("Rol eliminado");
         }
 
-        [HttpPost("{rolId}/permisos")]
-        public async Task<IActionResult> AsignarPermisos(int rolId, [FromBody] List<int> permisosIds)
+        [HttpPost("{parentRoleName}/permisos")]
+        public async Task<IActionResult> AsignarPermisos(string parentRoleName, [FromBody] List<string> permissionNames)
         {
-            var rol = await _rolService.GetByIdAsync(rolId);
-            if (rol == null)
-                return NotFound("Rol no encontrado");
-
-            rol.Permisos.Clear();
-
-            foreach (var permisoId in permisosIds)
-            {
-                var permiso = await _permisoService.GetByIdAsync(permisoId);
-                if (permiso != null && !rol.Permisos.Any(p => p.Id_Permiso == permisoId))
-                    rol.Permisos.Add(permiso);
-            }
-
-            await _rolService.UpdateAsync(rol);
+            var result = await _adminService.AsignarPermisosAsync(parentRoleName, permissionNames);
+            if (!result)
+                return BadRequest("Error al asignar permisos al rol");
+            
             return Ok("Permisos asignados al rol");
         }
 
-        [HttpDelete("{rolId}/permisos/{permisoId}")]
-        public async Task<IActionResult> QuitarPermiso(int rolId, int permisoId)
+        [HttpPost("{parentRoleName}/permisos/{permissionName}")]
+        public async Task<IActionResult> CrearPermisoEnRol(string parentRoleName, string permissionName)
         {
-            var rol = await _rolService.GetByIdAsync(rolId);
-            if (rol == null)
-                return NotFound("Rol no encontrado");
+            var result = await _adminService.CreatePermisoEnRolAsync(parentRoleName, permissionName);
+            if (!result)
+                return BadRequest("Error al crear permiso en el rol");
+            
+            return CreatedAtAction(nameof(ObtenerPermisoDeRol), new { parentRoleName, permissionName }, "Permiso creado en el rol");
+        }
 
-            var permiso = rol.Permisos.FirstOrDefault(p => p.Id_Permiso == permisoId);
+        [HttpGet("{parentRoleName}/permisos/{permissionName}")]
+        public async Task<ActionResult<PermisoDto>> ObtenerPermisoDeRol(string parentRoleName, string permissionName)
+        {
+            var permiso = await _adminService.GetPermisoDeRolAsync(parentRoleName, permissionName);
             if (permiso == null)
-                return NotFound("Permiso no asignado a este rol");
+                return NotFound("Permiso no encontrado en el rol");
+            
+            return Ok(permiso);
+        }
 
-            rol.Permisos.Remove(permiso);
-            await _rolService.UpdateAsync(rol);
+        [HttpPut("{parentRoleName}/permisos/{permissionName}")]
+        public async Task<IActionResult> ActualizarPermisoDeRol(string parentRoleName, string permissionName, [FromBody] string nuevoNombre)
+        {
+            var result = await _adminService.ActualizarPermisoDeRolAsync(parentRoleName, permissionName, nuevoNombre);
+            if (!result)
+                return BadRequest("Error al actualizar el permiso del rol");
+            
+            return Ok("Permiso actualizado");
+        }
+
+        [HttpDelete("{parentRoleName}/permisos/{permissionName}")]
+        public async Task<IActionResult> QuitarPermiso(string parentRoleName, string permissionName)
+        {
+            var result = await _adminService.QuitarPermisoAsync(parentRoleName, permissionName);
+            if (!result)
+                return NotFound("Error al quitar el permiso del rol");
+            
             return Ok("Permiso removido del rol");
         }
     }
