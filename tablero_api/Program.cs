@@ -33,8 +33,7 @@ namespace tablero_api
             var builder = WebApplication.CreateBuilder(args);
 
             // Configuración Swagger y URLs
-            var swaggerEnabled = builder.Configuration.GetValue<bool>("Swagger:Enabled", false);
-            var swaggerRoutePrefix = builder.Configuration.GetValue<string>("Swagger:RoutePrefix", "swagger");
+            var swaggerEnabled = builder.Configuration.GetValue<bool>("Swagger:Enabled", true);
             var urls = builder.Configuration.GetValue<string>("Urls", null);
             if (!string.IsNullOrEmpty(urls))
             {
@@ -154,11 +153,11 @@ namespace tablero_api
 
             app.MapGet("/", () => "API funcionando");
 
-            // Middleware para Swagger: permitir acceso anónimo
+            // Middleware para permitir acceso a Swagger sin autenticación
             app.Use(async (context, next) =>
             {
                 var path = context.Request.Path.Value ?? string.Empty;
-                if (swaggerEnabled && path.StartsWith($"/{swaggerRoutePrefix}", StringComparison.OrdinalIgnoreCase))
+                if (swaggerEnabled && path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
                 {
                     await next.Invoke();
                     return;
@@ -176,9 +175,9 @@ namespace tablero_api
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
-                    // Si Traefik usa StripPrefix=/swagger, dejar RoutePrefix vacío
-                    c.RoutePrefix = swaggerRoutePrefix == "swagger" ? "swagger" : "";
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tablero API v1");
+                    // Traefik hace StripPrefix /swagger, así que RoutePrefix vacío
+                    c.RoutePrefix = "";
+                    c.SwaggerEndpoint("/v1/swagger.json", "Tablero API v1");
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
             }
