@@ -131,10 +131,15 @@ namespace tablero_api
             // Esto protege TODAS las rutas que no tienen [AllowAnonymous].
             builder.Services.AddAuthorization(options =>
             {
-                options.FallbackPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                // Política por defecto: autenticación requerida, excepto rutas [AllowAnonymous]
+                options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
+
+                // 🔓 Desactivar FallbackPolicy para permitir excepciones manuales (como Swagger)
+                options.FallbackPolicy = null;
             });
+
 
             var app = builder.Build();
 
@@ -178,6 +183,9 @@ namespace tablero_api
                     c.RoutePrefix = swaggerRoutePrefix ?? string.Empty;
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
+
+                app.MapGet("/swagger", () => Results.Redirect("/swagger/index.html")).AllowAnonymous();
+                app.MapGet("/swagger/{**path}", () => Results.Ok()).AllowAnonymous();
             }
 
             // Middleware añadido: permite que las rutas que empiezan con /swagger
