@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using tablero_api.Data;
@@ -20,9 +19,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http; // Necesario para HttpContext en MapFallback
+using Microsoft.AspNetCore.Http;
 using System;
-using System.Net.Http;
 
 namespace tablero_api
 {
@@ -34,22 +32,22 @@ namespace tablero_api
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Cargar control de Swagger y URL desde configuración
+            // Configuración Swagger y URLs
             var swaggerEnabled = builder.Configuration.GetValue<bool>("Swagger:Enabled", false);
             var swaggerRoutePrefix = builder.Configuration.GetValue<string>("Swagger:RoutePrefix", "swagger");
-            var urls = builder.Configuration.GetValue<string>("Urls", null); // e.g. "http://*:5000"
+            var urls = builder.Configuration.GetValue<string>("Urls", null);
             if (!string.IsNullOrEmpty(urls))
             {
                 builder.WebHost.UseUrls(urls);
             }
 
-            builder.Services.AddControllers();
-            builder.Services.AddControllers().AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-            });
+            // Controllers y JSON
+            builder.Services.AddControllers()
+                .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
 
             builder.Services.AddEndpointsApiExplorer();
+
+            // Swagger con JWT
             builder.Services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -78,16 +76,15 @@ namespace tablero_api
                 });
             });
 
-            // Servicios y dependencias (sin cambios funcionales)
+            // Servicios internos
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddHttpClient();
             builder.Services.AddSingleton(provider =>
             {
-                // NOTA: Estas claves deberían ser cargadas desde un almacén de secretos (ej. Secrets Manager) o variables de entorno
-                string key = "62219311522870687600240042448129"; // 32 chars
-                string iv = "8458586964174710"; // 16 chars
+                string key = "62219311522870687600240042448129";
+                string iv = "8458586964174710";
                 return new CryptoHelper(key, iv);
             });
 
@@ -97,11 +94,9 @@ namespace tablero_api
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
-            // Admin Service HttpClient y registro
+            // Admin Service HttpClient
             builder.Services.AddHttpClient("AdminService", client =>
             {
-                // NOTA: El BaseAddress debe ser el nombre del servicio interno en Docker Swarm (ej. http://admin-service)
-                // Usar 127.0.0.1:3000 funciona solo si el servicio es local o si estás en desarrollo.
                 client.BaseAddress = new Uri("http://127.0.0.1:3000");
             });
             builder.Services.AddScoped<IAdminService, AdminService>(provider =>
@@ -119,37 +114,33 @@ namespace tablero_api
                 options.AddPolicy("AllowFrontend", policy =>
                 {
                     policy.WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
                 });
             });
 
-            // AUTH: usar extensión que encapsula la configuración Keycloak/JWKS
+            // Keycloak JWT
             builder.Services.AddKeycloakJwt(builder.Configuration);
 
-            // Forzar autorización global: solo usuarios autenticados (JWT/Keycloak) podrán acceder.
-            // Esto protege TODAS las rutas que no tienen [AllowAnonymous].
+            // Autenticación global JWT
             builder.Services.AddAuthorization(options =>
             {
-                // Política por defecto: autenticación requerida, excepto rutas [AllowAnonymous]
                 options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
 
-                // 🔓 Desactivar FallbackPolicy para permitir excepciones manuales (como Swagger)
-                options.FallbackPolicy = null;
+                options.FallbackPolicy = null; // Permitir excepciones manuales (Swagger)
             });
-
 
             var app = builder.Build();
 
             // Migraciones y seed
-            if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
+            using (var scope = app.Services.CreateScope())
             {
-                using (var scope = app.Services.CreateScope())
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.Migrate();
+                if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    db.Database.Migrate();
                     try
                     {
                         await DataSeeder.SeedAsync(db);
@@ -160,47 +151,18 @@ namespace tablero_api
                     }
                 }
             }
-            else
-            {
-                using (var scope = app.Services.CreateScope())
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    db.Database.Migrate();
-                }
-            }
 
             app.MapGet("/", () => "API funcionando");
 
-            // Habilitar Swagger
-            if (swaggerEnabled)
-            {
-                app.UseSwagger();
-                // Usamos UseSwaggerUI. La configuración de Traefik con stripPrefix
-                // hace que la ruta /swagger/index.html llegue al backend como /index.html
-                app.UseSwaggerUI(c =>
-                {
-                    // Configuramos el prefijo de ruta para que SwaggerUI sepa dónde están sus recursos
-                    c.RoutePrefix = swaggerRoutePrefix ?? string.Empty;
-                    c.DocumentTitle = "Tablero API - Swagger";
-                });
-
-                app.MapGet("/swagger", () => Results.Redirect("/swagger/index.html")).AllowAnonymous();
-                app.MapGet("/swagger/{**path}", () => Results.Ok()).AllowAnonymous();
-            }
-
-            // Middleware añadido: permite que las rutas que empiezan con /swagger
-            // continúen sin bloquearlas por la autenticación global.
+            // Middleware para Swagger: permitir acceso anónimo
             app.Use(async (context, next) =>
             {
                 var path = context.Request.Path.Value ?? string.Empty;
-
-                if (path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
+                if (swaggerEnabled && path.StartsWith($"/{swaggerRoutePrefix}", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Permite continuar sin autenticación
                     await next.Invoke();
                     return;
                 }
-
                 await next.Invoke();
             });
 
@@ -208,29 +170,17 @@ namespace tablero_api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // 🛑 SOLUCIÓN AL 401: Excluir las rutas de Swagger del FallbackPolicy global
+            // Swagger
             if (swaggerEnabled)
             {
-                // Construye el prefijo de ruta basado en la configuración (ej. /swagger)
-                var prefix = string.IsNullOrEmpty(swaggerRoutePrefix) ? "/" : $"/{swaggerRoutePrefix}";
-
-                // 1. Mapea la ruta base de Swagger (ej. /swagger)
-                // Esto maneja la primera solicitud y redirige al index.html
-                app.MapFallback(prefix, (HttpContext context) =>
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
                 {
-                    // Redirige al recurso index.html para que el middleware de Swagger lo sirva.
-                    // Request.Path contiene el prefijo que Traefik no quitó (ej. /swagger).
-                    context.Response.Redirect($"{context.Request.Path}/index.html");
-                    return Task.CompletedTask;
-                }).AllowAnonymous(); // Permite acceso anónimo.
-
-                // 2. Mapea todos los sub-recursos estáticos de Swagger (CSS, JS, JSON)
-                // Esto captura /swagger/index.html, /swagger/v1/swagger.json, etc.
-                app.MapFallback($"{prefix}/{{*path}}", (HttpContext context) =>
-                {
-                    // No hace falta lógica aquí, solo se asegura de que estas rutas sean alcanzables de forma anónima
-                    return Task.CompletedTask;
-                }).AllowAnonymous(); // Permite acceso anónimo a todos los sub-recursos.
+                    // Si Traefik usa StripPrefix=/swagger, dejar RoutePrefix vacío
+                    c.RoutePrefix = swaggerRoutePrefix == "swagger" ? "swagger" : "";
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tablero API v1");
+                    c.DocumentTitle = "Tablero API - Swagger";
+                });
             }
 
             app.MapControllers();
