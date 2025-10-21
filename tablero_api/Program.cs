@@ -27,6 +27,15 @@ namespace tablero_api
 
             var builder = WebApplication.CreateBuilder(args);
 
+            // Cargar control de Swagger y URL desde configuración
+            var swaggerEnabled = builder.Configuration.GetValue<bool>("Swagger:Enabled", false);
+            var swaggerRoutePrefix = builder.Configuration.GetValue<string>("Swagger:RoutePrefix", "swagger");
+            var urls = builder.Configuration.GetValue<string>("Urls", null); // e.g. "http://*:5000"
+            if (!string.IsNullOrEmpty(urls))
+            {
+                builder.WebHost.UseUrls(urls);
+            }
+
             builder.Services.AddControllers();
             builder.Services.AddControllers().AddJsonOptions(options =>
             {
@@ -146,10 +155,15 @@ namespace tablero_api
             }
 
             app.MapGet("/", () => "API funcionando");
-            if (app.Environment.IsDevelopment())
+            // Habilitar Swagger según configuración (puede ser true en prod si así lo deseas)
+            if (swaggerEnabled)
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c =>
+                {
+                    c.RoutePrefix = swaggerRoutePrefix ?? string.Empty; // poner "" para raíz
+                    c.DocumentTitle = "Tablero API - Swagger";
+                });
             }
 
             app.UseCors("AllowFrontend");
