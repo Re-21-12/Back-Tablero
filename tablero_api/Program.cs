@@ -177,7 +177,7 @@ namespace tablero_api
                 {
                     // Traefik hace StripPrefix /swagger, así que RoutePrefix vacío
                     c.RoutePrefix = "";
-                    c.SwaggerEndpoint("/v1/swagger.json", "Tablero API v1");
+                    c.SwaggerEndpoint("swagger/v1/swagger.json", "Tablero API v1");
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
             }
