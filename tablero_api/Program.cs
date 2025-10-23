@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using tablero_api.Data;
@@ -14,8 +13,14 @@ using tablero_api.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
 using tablero_api.Extensions;
-using Microsoft.AspNetCore.Authorization; // agregado
-using DotNetEnv; // agregado
+using Microsoft.AspNetCore.Authorization;
+using DotNetEnv;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
+using System;
 
 namespace tablero_api
 {
@@ -27,13 +32,21 @@ namespace tablero_api
 
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddControllers();
-            builder.Services.AddControllers().AddJsonOptions(options =>
+            // Configuración Swagger y URLs
+            var swaggerEnabled = builder.Configuration.GetValue<bool>("Swagger:Enabled", true);
+            var urls = builder.Configuration.GetValue<string>("Urls", null);
+            if (!string.IsNullOrEmpty(urls))
             {
-                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-            });
+                builder.WebHost.UseUrls(urls);
+            }
+
+            // Controllers y JSON
+            builder.Services.AddControllers()
+                .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
 
             builder.Services.AddEndpointsApiExplorer();
+
+            // Swagger con JWT
             builder.Services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -62,15 +75,15 @@ namespace tablero_api
                 });
             });
 
-            // Servicios y dependencias (sin cambios funcionales)
+            // Servicios internos
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddHttpClient();
             builder.Services.AddSingleton(provider =>
             {
-                string key = "62219311522870687600240042448129"; // 32 chars
-                string iv = "8458586964174710";                  // 16 chars
+                string key = "62219311522870687600240042448129";
+                string iv = "8458586964174710";
                 return new CryptoHelper(key, iv);
             });
 
@@ -80,7 +93,7 @@ namespace tablero_api
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
-            // Admin Service HttpClient y registro
+            // Admin Service HttpClient
             builder.Services.AddHttpClient("AdminService", client =>
             {
                 client.BaseAddress = new Uri("http://admin-service:3000");
@@ -100,32 +113,33 @@ namespace tablero_api
                 options.AddPolicy("AllowFrontend", policy =>
                 {
                     policy.WithOrigins(allowedOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
                 });
             });
 
-            // AUTH: usar extensión que encapsula la configuración Keycloak/JWKS
+            // Keycloak JWT
             builder.Services.AddKeycloakJwt(builder.Configuration);
 
-            // Forzar autorización global: solo usuarios autenticados (JWT/Keycloak) podrán acceder.
-            // Mantenerás excepciones explícitas con [AllowAnonymous] en controladores/acciones que lo requieran.
+            // Autenticación global JWT
             builder.Services.AddAuthorization(options =>
             {
-                options.FallbackPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
+                options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
+
+                options.FallbackPolicy = null; // Permitir excepciones manuales (Swagger)
             });
 
             var app = builder.Build();
 
             // Migraciones y seed
-            if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
+            using (var scope = app.Services.CreateScope())
             {
-                using (var scope = app.Services.CreateScope())
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.Database.Migrate();
+                if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    db.Database.Migrate();
                     try
                     {
                         await DataSeeder.SeedAsync(db);
@@ -136,25 +150,38 @@ namespace tablero_api
                     }
                 }
             }
-            else
-            {
-                using (var scope = app.Services.CreateScope())
-                {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    db.Database.Migrate();
-                }
-            }
 
             app.MapGet("/", () => "API funcionando");
-            if (app.Environment.IsDevelopment())
+
+            // Middleware para permitir acceso a Swagger sin autenticación
+            app.Use(async (context, next) =>
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+                var path = context.Request.Path.Value ?? string.Empty;
+                if (swaggerEnabled && path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
+                {
+                    await next.Invoke();
+                    return;
+                }
+                await next.Invoke();
+            });
 
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
+
+            // Swagger
+            if (swaggerEnabled)
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    // Traefik hace StripPrefix /swagger, así que RoutePrefix vacío
+                    c.RoutePrefix = "";
+                    c.SwaggerEndpoint("swagger/v1/swagger.json", "Tablero API v1");
+                    c.DocumentTitle = "Tablero API - Swagger";
+                });
+            }
+
             app.MapControllers();
             app.Run();
         }
