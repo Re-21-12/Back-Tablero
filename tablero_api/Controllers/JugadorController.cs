@@ -51,6 +51,7 @@ namespace tablero_api.Controllers
                 return NotFound("No existe el equipo");
             return Ok(ret);
         }
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CreateJugadorDto>>> Get()
         {

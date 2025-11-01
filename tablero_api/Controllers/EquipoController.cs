@@ -31,7 +31,7 @@ namespace tablero_api.Controllers
             _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
         }
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EquipoDto>>> Get()
         {

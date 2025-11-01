@@ -36,6 +36,7 @@ namespace tablero_api.Controllers
             _httpClient = httpClient;
             _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
         }
+        [AllowAnonymous]
         [HttpGet("Resultado")]
         public async Task<ActionResult<IEnumerable<PartidoResultadoDto>>> GetPartidosConResultado()
         {
@@ -72,7 +73,7 @@ namespace tablero_api.Controllers
         }
 
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PartidoDto>>> Get()
         {
