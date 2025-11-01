@@ -106,15 +106,74 @@ namespace tablero_api
                 return new AdminService(httpClient, logger);
             });
 
-            // CORS
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            // CORS: permite orígenes exactos y patrones con wildcard (*.dominio)
+            var rawOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
+            // Normalizar y separar patrones
+            var normalized = rawOrigins
+                .Where(o => !string.IsNullOrWhiteSpace(o))
+                .Select(o => o.Trim().TrimEnd('/'))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            // Orígenes exactos (con scheme) válidos
+            var exactOrigins = normalized
+                .Where(o => Uri.TryCreate(o, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
+                .ToArray();
+
+            // Patrones wildcard, pueden venir como "*.domain" o "https://*.domain"
+            var wildcardPatterns = normalized
+                .Where(o => o.Contains("*"))
+                .Select(p =>
+                {
+                    // Extraer scheme si existe
+                    if (Uri.TryCreate(p.Replace("*.", ""), UriKind.Absolute, out var tmp) && (p.StartsWith("http://") || p.StartsWith("https://")))
+                    {
+                        var scheme = p.StartsWith("https://") ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
+                        var host = p.Replace($"{scheme}://", "").Replace("*.", "");
+                        return new { Host = host, Scheme = scheme };
+                    }
+                    // Sin scheme: aceptar ambos schemes
+                    var hostOnly = p.Replace("*.", "");
+                    return new { Host = hostOnly, Scheme = (string?)null };
+                })
+                .ToArray();
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins(allowedOrigins)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
+                    // Usamos SetIsOriginAllowed para soportar wildcards
+                    policy.SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin)) return false;
+                        var originTrim = origin.TrimEnd('/');
+
+                        // Coincidencia exacta rápida
+                        if (exactOrigins.Any(e => string.Equals(e, originTrim, StringComparison.OrdinalIgnoreCase)))
+                            return true;
+
+                        // Validar URI
+                        if (!Uri.TryCreate(originTrim, UriKind.Absolute, out var uri)) return false;
+                        var host = uri.Host;
+                        var scheme = uri.Scheme;
+
+                        // Comprobar patrones wildcard
+                        foreach (var p in wildcardPatterns)
+                        {
+                            // Si el patrón especifica scheme, debe coincidir
+                            if (p.Scheme != null && !string.Equals(p.Scheme, scheme, StringComparison.OrdinalIgnoreCase))
+                                continue;
+
+                            if (host.EndsWith(p.Host, StringComparison.OrdinalIgnoreCase))
+                                return true;
+                        }
+
+                        return false;
+                    })
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                    // Si necesitas cookies desde el frontend añade .AllowCredentials();
                 });
             });
 
