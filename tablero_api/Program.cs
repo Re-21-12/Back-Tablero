@@ -240,7 +240,8 @@ namespace tablero_api
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
             }
-
+            app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok())
+           .AllowAnonymous();
             app.MapControllers();
             app.Run();
         }
