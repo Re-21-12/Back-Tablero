@@ -1,26 +1,24 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System.Text;
 using tablero_api.Data;
+using tablero_api.Extensions;
 using tablero_api.Repositories;
 using tablero_api.Repositories.Interfaces;
 using tablero_api.Services;
 using tablero_api.Services.Interfaces;
 using tablero_api.Utils;
-using tablero_api.Models;
-using Microsoft.Extensions.DependencyInjection;
-using System.Threading.Tasks;
-using tablero_api.Extensions;
-using Microsoft.AspNetCore.Authorization;
-using DotNetEnv;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
-using System;
 
 namespace tablero_api
 {
@@ -28,25 +26,37 @@ namespace tablero_api
     {
         private static async Task Main(string[] args)
         {
+            // 🔹 Cargar variables de entorno desde .env
             Env.Load();
 
             var builder = WebApplication.CreateBuilder(args);
 
-            // Configuración Swagger y URLs
+            // =====================================================
+            // 🔸 CONFIGURACIÓN GENERAL
+            // =====================================================
+
             var swaggerEnabled = builder.Configuration.GetValue<bool>("Swagger:Enabled", true);
             var urls = builder.Configuration.GetValue<string>("Urls", null);
-            if (!string.IsNullOrEmpty(urls))
-            {
-                builder.WebHost.UseUrls(urls);
-            }
 
-            // Controllers y JSON
+            if (!string.IsNullOrEmpty(urls))
+                builder.WebHost.UseUrls(urls);
+
+            // =====================================================
+            // 🔸 SERVICIOS BÁSICOS Y JSON
+            // =====================================================
+
             builder.Services.AddControllers()
-                .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                });
 
             builder.Services.AddEndpointsApiExplorer();
 
-            // Swagger con JWT
+            // =====================================================
+            // 🔸 CONFIGURAR SWAGGER CON JWT
+            // =====================================================
+
             builder.Services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -56,7 +66,7 @@ namespace tablero_api
                     Scheme = "bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Description = "Introduce el token JWT con el prefijo 'Bearer '. Ejemplo: Bearer {token}"
+                    Description = "Introduce tu token JWT. Ejemplo: Bearer {token}"
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -75,11 +85,16 @@ namespace tablero_api
                 });
             });
 
-            // Servicios internos
+            // =====================================================
+            // 🔸 INYECCIÓN DE DEPENDENCIAS
+            // =====================================================
+
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddHttpClient();
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
+
             builder.Services.AddSingleton(provider =>
             {
                 string key = "62219311522870687600240042448129";
@@ -87,17 +102,22 @@ namespace tablero_api
                 return new CryptoHelper(key, iv);
             });
 
+            // =====================================================
+            // 🔸 BASE DE DATOS
+            // =====================================================
+
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
+            // =====================================================
+            // 🔸 SERVICIO HTTP ADMIN (MICROSERVICIO)
+            // =====================================================
 
-            // Admin Service HttpClient
             builder.Services.AddHttpClient("AdminService", client =>
             {
                 client.BaseAddress = new Uri("http://admin-service:3000");
             });
+
             builder.Services.AddScoped<IAdminService, AdminService>(provider =>
             {
                 var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
@@ -106,97 +126,60 @@ namespace tablero_api
                 return new AdminService(httpClient, logger);
             });
 
-            // CORS: permite orígenes exactos y patrones con wildcard (*.dominio)
-            var rawOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            // =====================================================
+            // 🔸 CONFIGURAR CORS (PERMITE WILDCARDS Y ORÍGENES ESPECÍFICOS)
+            // =====================================================
 
-            // Normalizar y separar patrones
-            var normalized = rawOrigins
-                .Where(o => !string.IsNullOrWhiteSpace(o))
-                .Select(o => o.Trim().TrimEnd('/'))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            // Orígenes exactos (con scheme) válidos
-            var exactOrigins = normalized
-                .Where(o => Uri.TryCreate(o, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
-                .ToArray();
-
-            // Patrones wildcard, pueden venir como "*.domain" o "https://*.domain"
-            var wildcardPatterns = normalized
-                .Where(o => o.Contains("*"))
-                .Select(p =>
-                {
-                    // Extraer scheme si existe
-                    if (Uri.TryCreate(p.Replace("*.", ""), UriKind.Absolute, out var tmp) && (p.StartsWith("http://") || p.StartsWith("https://")))
-                    {
-                        var scheme = p.StartsWith("https://") ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
-                        var host = p.Replace($"{scheme}://", "").Replace("*.", "");
-                        return new { Host = host, Scheme = scheme };
-                    }
-                    // Sin scheme: aceptar ambos schemes
-                    var hostOnly = p.Replace("*.", "");
-                    return new { Host = hostOnly, Scheme = (string?)null };
-                })
-                .ToArray();
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    // Usamos SetIsOriginAllowed para soportar wildcards
-                    policy.SetIsOriginAllowed(origin =>
-                    {
-                        if (string.IsNullOrWhiteSpace(origin)) return false;
-                        var originTrim = origin.TrimEnd('/');
-
-                        // Coincidencia exacta rápida
-                        if (exactOrigins.Any(e => string.Equals(e, originTrim, StringComparison.OrdinalIgnoreCase)))
-                            return true;
-
-                        // Validar URI
-                        if (!Uri.TryCreate(originTrim, UriKind.Absolute, out var uri)) return false;
-                        var host = uri.Host;
-                        var scheme = uri.Scheme;
-
-                        // Comprobar patrones wildcard
-                        foreach (var p in wildcardPatterns)
+                    policy
+                        .SetIsOriginAllowed(origin =>
                         {
-                            // Si el patrón especifica scheme, debe coincidir
-                            if (p.Scheme != null && !string.Equals(p.Scheme, scheme, StringComparison.OrdinalIgnoreCase))
-                                continue;
+                            if (string.IsNullOrEmpty(origin)) return false;
+                            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
 
-                            if (host.EndsWith(p.Host, StringComparison.OrdinalIgnoreCase))
-                                return true;
-                        }
-
-                        return false;
-                    })
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-                    // Si necesitas cookies desde el frontend añade .AllowCredentials();
+                            // Permite orígenes exactos o cualquier subdominio de corazondeseda.lat
+                            return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)
+                                   || uri.Host.EndsWith(".corazondeseda.lat", StringComparison.OrdinalIgnoreCase);
+                        })
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials(); // ⚠️ Usa esto solo si frontend envía cookies o tokens con credenciales
                 });
             });
 
-            // Keycloak JWT
+            // =====================================================
+            // 🔸 AUTENTICACIÓN Y AUTORIZACIÓN (KEYCLOAK)
+            // =====================================================
+
             builder.Services.AddKeycloakJwt(builder.Configuration);
 
-            // Autenticación global JWT
             builder.Services.AddAuthorization(options =>
             {
+                // 🔒 Política global: todos los endpoints requieren autenticación
                 options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
 
-                options.FallbackPolicy = null; // Permitir excepciones manuales (Swagger)
+                // 🚪 Permitir excepciones manuales [AllowAnonymous]
+                options.FallbackPolicy = null;
             });
 
             var app = builder.Build();
 
-            // Migraciones y seed
+            // =====================================================
+            // 🔸 MIGRACIONES Y SEED DE BASE DE DATOS
+            // =====================================================
+
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Database.Migrate();
+
                 if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
                 {
                     try
@@ -205,14 +188,18 @@ namespace tablero_api
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex);
+                        Console.WriteLine($"❌ Error al aplicar seed: {ex}");
                     }
                 }
             }
 
-            app.MapGet("/", () => "API funcionando");
+            // =====================================================
+            // 🔸 MIDDLEWARES GLOBALES
+            // =====================================================
 
-            // Middleware para permitir acceso a Swagger sin autenticación
+            app.MapGet("/", () => "✅ API funcionando correctamente").AllowAnonymous();
+
+            // Permite acceso libre a Swagger
             app.Use(async (context, next) =>
             {
                 var path = context.Request.Path.Value ?? string.Empty;
@@ -228,21 +215,38 @@ namespace tablero_api
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // Swagger
+            // =====================================================
+            // 🔸 SWAGGER UI
+            // =====================================================
+
             if (swaggerEnabled)
             {
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
-                    // Traefik hace StripPrefix /swagger, así que RoutePrefix vacío
-                    c.RoutePrefix = "";
+                    c.RoutePrefix = ""; // Para acceso directo a dominio raíz
                     c.SwaggerEndpoint("swagger/v1/swagger.json", "Tablero API v1");
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
             }
+
+            // =====================================================
+            // 🔸 RESPUESTA GLOBAL PARA OPTIONS (Preflight CORS)
+            // =====================================================
+
             app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok())
-           .AllowAnonymous();
+               .AllowAnonymous();
+
+            // =====================================================
+            // 🔸 ENDPOINTS DE CONTROLADORES
+            // =====================================================
+
             app.MapControllers();
+
+            // =====================================================
+            // 🔸 EJECUCIÓN FINAL
+            // =====================================================
+
             app.Run();
         }
     }
