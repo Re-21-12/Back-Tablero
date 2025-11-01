@@ -19,6 +19,7 @@ namespace tablero_api.Data
         public DbSet<Rol> Roles => Set<Rol>();
         public DbSet<Jugador> Jugadores => Set<Jugador>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<EmailMessage> Emails => Set<EmailMessage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,6 +105,16 @@ namespace tablero_api.Data
                 .WithMany()
                 .HasForeignKey(rt => rt.UsuarioId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // --- Mail-Service ---
+            modelBuilder.Entity<EmailMessage>(e =>
+            {
+                e.Property(p => p.To).IsRequired().HasMaxLength(256);
+                e.Property(p => p.Subject).IsRequired().HasMaxLength(256);
+                e.Property(p => p.Body).IsRequired();
+            });
         }
+
     }
+
 }

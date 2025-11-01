@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -18,16 +19,16 @@ namespace tablero_api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddControllers();
-            builder.Services.AddControllers().AddJsonOptions(options =>
+            // Controllers + JSON
+            builder.Services.AddControllers().AddJsonOptions(o =>
             {
-                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
             });
 
+            // Swagger + Auth header (Bearer)
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                // Configuraci�n para soportar JWT Bearer en Swagger
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -35,7 +36,7 @@ namespace tablero_api
                     Scheme = "bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Description = "Introduce el token JWT con el prefijo 'Bearer '. Ejemplo: Bearer {token}"
+                    Description = "Bearer {token}"
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -53,51 +54,42 @@ namespace tablero_api
                     }
                 });
             });
+
+            // Repos / servicios base
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddSingleton(provider =>
+            builder.Services.AddSingleton(_ =>
             {
-                string key = "62219311522870687600240042448129"; // 32 chars
-                string iv = "8458586964174710";                  // 16 chars
+                string key = "62219311522870687600240042448129";
+                string iv = "8458586964174710";
                 return new CryptoHelper(key, iv);
             });
 
-            // EF Core + SQL Server
+            // DbContext
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
-            // Dependencias
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
-
             // CORS
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? [];
+            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins(
-                        "http://localhost:4200",
-                        "https://front-analisis-registros.netlify.app",
-                        "https://proy-analisis-re2112.duckdns.org",
-                        "http://frontend:4200",
-                        "http://157.180.19.137:4200",
-                        "http://157.180.19.137",
-    "http://vmacarioe1_umg.com.gt:4200"
-
-
-
-                    )
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    policy.WithOrigins(allowedOrigins)
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
                 });
             });
+
+            // JWT
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             var keyBytes = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "YourSuperSecretKey123!");
-            //Authentication
+
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -109,7 +101,7 @@ namespace tablero_api
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false,
+                    ValidateIssuer = false, 
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
@@ -120,18 +112,30 @@ namespace tablero_api
             });
 
             builder.Services.AddAuthorization();
+            builder.Services.Configure<MailerServiceOptions>(builder.Configuration.GetSection("MailerService"));
+            builder.Services.AddHttpClient<IMailerServiceClient, MailerServiceClient>((sp, client) =>
+            {
+                var cfg = sp.GetRequiredService<IOptions<MailerServiceOptions>>().Value;
+
+                if (string.IsNullOrWhiteSpace(cfg.BaseUrl))
+                    throw new InvalidOperationException("Falta MailerService:BaseUrl en configuración.");
+
+                client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
+                client.Timeout = TimeSpan.FromSeconds(cfg.TimeoutSeconds <= 0 ? 30 : cfg.TimeoutSeconds);
+            });
+
 
             var app = builder.Build();
 
             app.MapGet("/", () => "API funcionando");
-            // Configure the HTTP request pipeline.
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            // Apply DB migration and seed data
+            // Migraciones al iniciar
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -141,7 +145,9 @@ namespace tablero_api
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
+
             app.MapControllers();
+
             app.Run();
         }
     }
