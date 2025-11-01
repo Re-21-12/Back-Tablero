@@ -51,8 +51,8 @@ namespace tablero_api.Controllers
                 return NotFound("No existe el equipo");
             return Ok(ret);
         }
-        [AllowAnonymous]
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<CreateJugadorDto>>> Get()
         {
 
@@ -106,6 +106,8 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
+
         public async Task<ActionResult<CreateJugadorDto>> Get(int id)
         {
             var jugador = await _service.GetByIdAsync(id);
@@ -180,6 +182,8 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet("Paginado")]
+        [AllowAnonymous]
+
         public async Task<Pagina<JugadorPaginaDto>> GetLocalidadAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
         {
             var todos = await _service.GetAllAsync();

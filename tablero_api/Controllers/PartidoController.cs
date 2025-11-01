@@ -73,8 +73,8 @@ namespace tablero_api.Controllers
         }
 
 
-        [AllowAnonymous]
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<PartidoDto>>> Get()
         {
             var partidos = await _partidoService.GetAllAsync();
@@ -99,6 +99,8 @@ namespace tablero_api.Controllers
             return Ok(partidosDto);
         }
         [HttpGet("Paginado")]
+        [AllowAnonymous]
+
         public async Task<ActionResult<Pagina<PartidoDto>>> GetPartidosPerPage([FromQuery] int pagina, [FromQuery] int tamanio)
         {
             var todos = await _partidoService.GetAllAsync();

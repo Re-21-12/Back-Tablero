@@ -20,6 +20,7 @@ namespace tablero_api.Controllers
 
         // GET: api/Localidad
         [HttpGet]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<CreatedLocalidadDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<CreatedLocalidadDto>>> Get()
         {

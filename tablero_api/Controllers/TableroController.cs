@@ -24,6 +24,7 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet("{id}/resultado")]
+        [AllowAnonymous]
         public async Task<ActionResult<ResultadoPartidoDto>> ResultadoPartido(int id)
         {
             try
@@ -35,7 +36,7 @@ namespace tablero_api.Controllers
 
                 var partido = await _partidoService.GetByIdAsync(id);
                 var equipoLocal = partido != null ? await _equipoService.GetByIdAsync(partido.id_Local) : null;
-                if(equipoLocal == null)
+                if (equipoLocal == null)
                 {
                     return NotFound("Equipo local no encontrado.");
                 }

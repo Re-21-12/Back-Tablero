@@ -31,8 +31,8 @@ namespace tablero_api.Controllers
             _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
         }
 
-        [AllowAnonymous]
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<EquipoDto>>> Get()
         {
             var equipos = await _service.GetAllAsync();
@@ -54,6 +54,7 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<EquipoDto>> Get(int id)
         {
             var equipo = await _service.GetByIdAsync(id);
@@ -162,6 +163,8 @@ namespace tablero_api.Controllers
 
 
         [HttpGet("Paginado")]
+        [AllowAnonymous]
+
         public async Task<Pagina<EquipoDto>> GetEquiposAsync([FromQuery] int pagina = 1, [FromQuery] int tamanio = 10)
         {
             var todos = await _service.GetAllAsync();
