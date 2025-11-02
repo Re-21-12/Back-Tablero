@@ -59,6 +59,7 @@ namespace tablero_api.Controllers
             var jugadores = await _service.GetAllAsync();
 
             var dto = jugadores.Select(j => new CreateJugadorDto(
+            var dto = jugadores.Select(j => new CreateJugadorDto(
                 j.Nombre,
                 j.Apellido,
                 j.Estatura,
@@ -114,6 +115,7 @@ namespace tablero_api.Controllers
             if (jugador == null)
                 return NotFound();
 
+            var dto = new CreateJugadorDto(
             var dto = new CreateJugadorDto(
                 jugador.Nombre,
                 jugador.Apellido,
