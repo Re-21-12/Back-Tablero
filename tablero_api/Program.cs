@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Options;
 using tablero_api.Data;
 using tablero_api.Extensions;
 using tablero_api.Repositories;
@@ -124,6 +125,23 @@ namespace tablero_api
                 var httpClient = httpClientFactory.CreateClient("AdminService");
                 var logger = provider.GetRequiredService<ILogger<AdminService>>();
                 return new AdminService(httpClient, logger);
+            });
+
+            // =====================================================
+            // 🔸 MAILER SERVICE (OPCIONES + HTTP CLIENT)
+            // =====================================================
+
+            builder.Services.Configure<MailerServiceOptions>(builder.Configuration.GetSection("MailerService"));
+
+            builder.Services.AddHttpClient<IMailerServiceClient, MailerServiceClient>((sp, client) =>
+            {
+                var cfg = sp.GetRequiredService<IOptions<MailerServiceOptions>>().Value;
+
+                if (string.IsNullOrWhiteSpace(cfg.BaseUrl))
+                    throw new InvalidOperationException("Falta MailerService:BaseUrl en configuración.");
+
+                client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
+                client.Timeout = TimeSpan.FromSeconds(cfg.TimeoutSeconds <= 0 ? 30 : cfg.TimeoutSeconds);
             });
 
             // =====================================================
