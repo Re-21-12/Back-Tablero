@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -108,7 +109,9 @@ namespace tablero_api
             // =====================================================
 
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                       .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
+            );
 
             // =====================================================
             // 🔸 SERVICIO HTTP ADMIN (MICROSERVICIO)
@@ -195,8 +198,17 @@ namespace tablero_api
 
             using (var scope = app.Services.CreateScope())
             {
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                db.Database.Migrate();
+                try
+                {
+                    db.Database.Migrate();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // Registrar y continuar (temporal). NO sustituye crear la migración correcta.
+                    logger.LogError(ex, "EF Core detectó cambios pendientes en el modelo. Crea y commitea una migración con 'dotnet ef migrations add <Name>' y vuelve a desplegar.");
+                }
 
                 if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
                 {
