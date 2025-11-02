@@ -4,7 +4,7 @@ using tablero_api.Models.DTOS;
 using tablero_api.Services.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
+// a
 namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
@@ -22,7 +22,7 @@ namespace tablero_api.Controllers
         public async Task<ActionResult<IEnumerable<Anotacion>>> Get()
         {
             var anotaciones = await _anotacion.GetAllAsync();
-           
+
             return Ok(anotaciones);
 
         }
