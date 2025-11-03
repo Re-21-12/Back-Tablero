@@ -97,6 +97,16 @@ namespace tablero_api
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
+            // Import service (forwarder) - forwards uploaded files to the import-service container
+            builder.Services.AddHttpClient<tablero_api.Services.Interfaces.IImportService, tablero_api.Services.ImportService>(client =>
+            {
+                var baseUrl = builder.Configuration.GetValue<string>("MicroServices:ImportService", "http://import-service:8080");
+                if (!string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    client.BaseAddress = new Uri(baseUrl);
+                }
+            });
+
             builder.Services.AddSingleton(provider =>
             {
                 string key = "62219311522870687600240042448129";
