@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNetEnv;
@@ -12,8 +12,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using tablero_api.Data;
 using tablero_api.Extensions;
 using tablero_api.Repositories;
@@ -53,6 +54,7 @@ namespace tablero_api
                     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                 });
 
+            // Swagger + Auth header (Bearer)
             builder.Services.AddEndpointsApiExplorer();
 
             // =====================================================
@@ -178,7 +180,6 @@ namespace tablero_api
             // =====================================================
 
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
@@ -188,6 +189,14 @@ namespace tablero_api
                         {
                             if (string.IsNullOrEmpty(origin)) return false;
                             if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+
+                            // Permite explícitamente http://localhost:4200 (implícito)
+                            if (string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+                                && uri.Port == 4200)
+                            {
+                                return true;
+                            }
 
                             // Permite orígenes exactos o cualquier subdominio de corazondeseda.lat
                             return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)

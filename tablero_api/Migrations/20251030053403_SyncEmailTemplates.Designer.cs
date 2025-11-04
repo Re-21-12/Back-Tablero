@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using tablero_api.Data;
 
@@ -11,9 +12,11 @@ using tablero_api.Data;
 namespace tablero_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251030053403_SyncEmailTemplates")]
+    partial class SyncEmailTemplates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,37 +24,6 @@ namespace tablero_api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("tablero_api.Models.Anotacion", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<int>("id_cuarto")
-                        .HasColumnType("int");
-
-                    b.Property<int>("id_jugador")
-                        .HasColumnType("int");
-
-                    b.Property<int>("id_partido")
-                        .HasColumnType("int");
-
-                    b.Property<int>("total_anotaciones")
-                        .HasColumnType("int");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("id_cuarto");
-
-                    b.HasIndex("id_jugador");
-
-                    b.HasIndex("id_partido");
-
-                    b.ToTable("Anotaciones");
-                });
 
             modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
@@ -88,43 +60,40 @@ namespace tablero_api.Migrations
                     b.ToTable("Cuartos");
                 });
 
-            modelBuilder.Entity("tablero_api.Models.EmailMessage", b =>
+            modelBuilder.Entity("tablero_api.Models.EmailTemplate", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("uniqueidentifier");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Body")
+                    b.Property<string>("BodyHtml")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Error")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
-                    b.Property<DateTime?>("SentAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("Subject")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("To")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Emails");
+                    b.ToTable("EmailTemplates", (string)null);
                 });
 
             modelBuilder.Entity("tablero_api.Models.Equipo", b =>
@@ -150,37 +119,6 @@ namespace tablero_api.Migrations
                     b.HasIndex("id_Localidad");
 
                     b.ToTable("Equipos");
-                });
-
-            modelBuilder.Entity("tablero_api.Models.Falta", b =>
-                {
-                    b.Property<int>("id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
-
-                    b.Property<int>("id_cuarto")
-                        .HasColumnType("int");
-
-                    b.Property<int>("id_jugador")
-                        .HasColumnType("int");
-
-                    b.Property<int>("id_partido")
-                        .HasColumnType("int");
-
-                    b.Property<int>("total_falta")
-                        .HasColumnType("int");
-
-                    b.HasKey("id");
-
-                    b.HasIndex("id_cuarto");
-
-                    b.HasIndex("id_jugador");
-
-                    b.HasIndex("id_partido");
-
-                    b.ToTable("Faltas");
                 });
 
             modelBuilder.Entity("tablero_api.Models.Imagen", b =>
@@ -443,33 +381,6 @@ namespace tablero_api.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("tablero_api.Models.Anotacion", b =>
-                {
-                    b.HasOne("tablero_api.Models.Cuarto", "cuarto")
-                        .WithMany()
-                        .HasForeignKey("id_cuarto")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tablero_api.Models.Jugador", "jugador")
-                        .WithMany()
-                        .HasForeignKey("id_jugador")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tablero_api.Models.Partido", "partido")
-                        .WithMany()
-                        .HasForeignKey("id_partido")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("cuarto");
-
-                    b.Navigation("jugador");
-
-                    b.Navigation("partido");
-                });
-
             modelBuilder.Entity("tablero_api.Models.Cuarto", b =>
                 {
                     b.HasOne("tablero_api.Models.Equipo", "Equipo")
@@ -498,33 +409,6 @@ namespace tablero_api.Migrations
                         .IsRequired();
 
                     b.Navigation("Localidad");
-                });
-
-            modelBuilder.Entity("tablero_api.Models.Falta", b =>
-                {
-                    b.HasOne("tablero_api.Models.Cuarto", "cuarto")
-                        .WithMany()
-                        .HasForeignKey("id_cuarto")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tablero_api.Models.Jugador", "jugador")
-                        .WithMany()
-                        .HasForeignKey("id_jugador")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("tablero_api.Models.Partido", "partido")
-                        .WithMany()
-                        .HasForeignKey("id_partido")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("cuarto");
-
-                    b.Navigation("jugador");
-
-                    b.Navigation("partido");
                 });
 
             modelBuilder.Entity("tablero_api.Models.Jugador", b =>

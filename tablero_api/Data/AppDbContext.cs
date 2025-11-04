@@ -19,7 +19,6 @@ namespace tablero_api.Data
         public DbSet<Rol> Roles => Set<Rol>();
         public DbSet<Jugador> Jugadores => Set<Jugador>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-        // agregado: tabla para mensajes de email usados por el MailerService
         public DbSet<EmailMessage> Emails => Set<EmailMessage>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -151,7 +150,6 @@ namespace tablero_api.Data
                 .HasForeignKey(f => f.id_partido)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // --- Mail-Service: configuración de EmailMessage ---
             modelBuilder.Entity<EmailMessage>(e =>
             {
                 e.Property(p => p.To).IsRequired().HasMaxLength(256);
@@ -161,4 +159,5 @@ namespace tablero_api.Data
         }
 
     }
+
 }
