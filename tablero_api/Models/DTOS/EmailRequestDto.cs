@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 namespace tablero_api.Models.DTOS
+=======
+﻿namespace tablero_api.Models.DTOS
+>>>>>>> upstream/stableDani
 {
     public sealed class EmailRequestDto
     {

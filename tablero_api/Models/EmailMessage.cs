@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 namespace tablero_api.Models
+=======
+﻿namespace tablero_api.Models
+>>>>>>> upstream/stableDani
 {
     public enum EmailStatus { Draft = 0, Sent = 1, Failed = 2 }
 
@@ -16,4 +20,8 @@ namespace tablero_api.Models
 
         public string? Error { get; set; }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> upstream/stableDani

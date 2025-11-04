@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 using System.Net.Http.Json;
+=======
+﻿using System.Net.Http.Json;
+>>>>>>> upstream/stableDani
 using tablero_api.Services.Interfaces;
 
 namespace tablero_api.Services
@@ -14,4 +18,8 @@ namespace tablero_api.Services
             return content;
         }
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> upstream/stableDani
