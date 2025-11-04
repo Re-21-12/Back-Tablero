@@ -16,13 +16,14 @@ namespace tablero_api.Controllers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<ImportController> _logger;
-        private readonly string _importServiceBaseUrl;
+        private readonly string? _importServiceBaseUrl;
 
         public ImportController(IHttpClientFactory httpClientFactory, ILogger<ImportController> logger, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
-            _importServiceBaseUrl = configuration["ImportService:BaseUrl"] ?? throw new ArgumentNullException("ImportService:BaseUrl");
+            // Leer la URL desde MicroServices:ImportService (appsettings.json) si existe. No lanzamos excepción: el cliente nombrado también está registrado en Program.cs.
+            _importServiceBaseUrl = configuration.GetValue<string>("MicroServices:ImportService");
         }
 
         [HttpPost("equipo/csv")]
@@ -66,8 +67,24 @@ namespace tablero_api.Controllers
 
             try
             {
-                var client = _httpClientFactory.CreateClient();
-                var targetPath = $"{_importServiceBaseUrl.TrimEnd('/')}/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                // Preferimos el HttpClient nombrado "ImportService" (registrado en Program.cs con BaseAddress).
+                var client = _httpClientFactory.CreateClient("ImportService");
+                string targetPath;
+
+                if (client.BaseAddress != null)
+                {
+                    // Usar ruta relativa cuando el HttpClient ya tenga BaseAddress
+                    targetPath = $"/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                }
+                else if (!string.IsNullOrWhiteSpace(_importServiceBaseUrl))
+                {
+                    targetPath = $"{_importServiceBaseUrl.TrimEnd('/')}/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                }
+                else
+                {
+                    // Fallback hardcode por seguridad
+                    targetPath = $"http://import-service:8080/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                }
 
                 using var content = new MultipartFormDataContent();
                 using var stream = file.OpenReadStream();
