@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 using System.Net.Http.Json;
-=======
-﻿using System.Net.Http.Json;
->>>>>>> upstream/stableDani
 
 namespace tablero_api.Services.Interfaces
 {
@@ -24,8 +20,4 @@ namespace tablero_api.Services.Interfaces
         public string Message { get; set; } = string.Empty;
         public string? Error { get; set; }
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> upstream/stableDani
