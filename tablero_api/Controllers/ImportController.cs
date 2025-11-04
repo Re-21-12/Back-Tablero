@@ -10,7 +10,7 @@ using tablero_api.Services.Interfaces;
 namespace tablero_api.Controllers
 {
     [ApiController]
-    [Route("import")]
+    [Route("api/[controller]")]
     public class ImportController : ControllerBase
     {
         private readonly IImportService _importService;
