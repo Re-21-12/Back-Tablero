@@ -98,7 +98,7 @@ namespace tablero_api
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
-
+            //a
             // Import service (forwarder) - register a named HttpClient "ImportService"
             builder.Services.AddHttpClient("ImportService", client =>
             {
