@@ -174,6 +174,14 @@ namespace tablero_api
                             if (string.IsNullOrEmpty(origin)) return false;
                             if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
 
+                            // Permite explícitamente http://localhost:4200 (implícito)
+                            if (string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+                                && uri.Port == 4200)
+                            {
+                                return true;
+                            }
+
                             // Permite orígenes exactos o cualquier subdominio de corazondeseda.lat
                             return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)
                                    || uri.Host.EndsWith(".corazondeseda.lat", StringComparison.OrdinalIgnoreCase);
