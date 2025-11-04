@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNetEnv;
@@ -13,14 +12,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-=======
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
->>>>>>> upstream/stableDani
 using Microsoft.OpenApi.Models;
-using Microsoft.Extensions.Options;
 using tablero_api.Data;
 using tablero_api.Extensions;
 using tablero_api.Repositories;
@@ -40,7 +34,6 @@ namespace tablero_api
 
             var builder = WebApplication.CreateBuilder(args);
 
-<<<<<<< HEAD
             // =====================================================
             // 🔸 CONFIGURACIÓN GENERAL
             // =====================================================
@@ -60,13 +53,6 @@ namespace tablero_api
                 {
                     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                 });
-=======
-            // Controllers + JSON
-            builder.Services.AddControllers().AddJsonOptions(o =>
-            {
-                o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-            });
->>>>>>> upstream/stableDani
 
             // Swagger + Auth header (Bearer)
             builder.Services.AddEndpointsApiExplorer();
@@ -84,11 +70,7 @@ namespace tablero_api
                     Scheme = "bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-<<<<<<< HEAD
                     Description = "Introduce tu token JWT. Ejemplo: Bearer {token}"
-=======
-                    Description = "Bearer {token}"
->>>>>>> upstream/stableDani
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -107,7 +89,6 @@ namespace tablero_api
                 });
             });
 
-<<<<<<< HEAD
             // =====================================================
             // 🔸 INYECCIÓN DE DEPENDENCIAS
             // =====================================================
@@ -183,34 +164,10 @@ namespace tablero_api
             // =====================================================
 
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
-
-=======
-            // Repos / servicios base
-            builder.Services.AddScoped<LocalidadRepository>();
-            builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-            builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddSingleton(_ =>
-            {
-                string key = "62219311522870687600240042448129";
-                string iv = "8458586964174710";
-                return new CryptoHelper(key, iv);
-            });
-
-            // DbContext
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
-
-            // CORS
-            var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
->>>>>>> upstream/stableDani
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-<<<<<<< HEAD
                     policy
                         .SetIsOriginAllowed(origin =>
                         {
@@ -250,65 +207,6 @@ namespace tablero_api
             // 🔸 MIGRACIONES Y SEED DE BASE DE DATOS
             // =====================================================
 
-=======
-                    policy.WithOrigins(allowedOrigins)
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
-                });
-            });
-
-            // JWT
-            var jwtSettings = builder.Configuration.GetSection("Jwt");
-            var keyBytes = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "YourSuperSecretKey123!");
-
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false, 
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
-                };
-            });
-
-            builder.Services.AddAuthorization();
-            builder.Services.Configure<MailerServiceOptions>(builder.Configuration.GetSection("MailerService"));
-            builder.Services.AddHttpClient<IMailerServiceClient, MailerServiceClient>((sp, client) =>
-            {
-                var cfg = sp.GetRequiredService<IOptions<MailerServiceOptions>>().Value;
-
-                if (string.IsNullOrWhiteSpace(cfg.BaseUrl))
-                    throw new InvalidOperationException("Falta MailerService:BaseUrl en configuración.");
-
-                client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
-                client.Timeout = TimeSpan.FromSeconds(cfg.TimeoutSeconds <= 0 ? 30 : cfg.TimeoutSeconds);
-            });
-
-
-            var app = builder.Build();
-
-            app.MapGet("/", () => "API funcionando");
-
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            // Migraciones al iniciar
->>>>>>> upstream/stableDani
             using (var scope = app.Services.CreateScope())
             {
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
@@ -358,7 +256,6 @@ namespace tablero_api
             app.UseAuthentication();
             app.UseAuthorization();
 
-<<<<<<< HEAD
             // =====================================================
             // 🔸 SWAGGER UI
             // =====================================================
@@ -391,10 +288,6 @@ namespace tablero_api
             // 🔸 EJECUCIÓN FINAL
             // =====================================================
 
-=======
-            app.MapControllers();
-
->>>>>>> upstream/stableDani
             app.Run();
         }
     }
