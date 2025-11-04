@@ -100,11 +100,27 @@ namespace tablero_api
             // Import service (forwarder) - forwards uploaded files to the import-service container
             builder.Services.AddHttpClient<tablero_api.Services.Interfaces.IImportService, tablero_api.Services.ImportService>(client =>
             {
-                var baseUrl = builder.Configuration.GetValue<string>("MicroServices:ImportService", "http://import-service:8080");
-                if (!string.IsNullOrWhiteSpace(baseUrl))
+                // Intentar URL explícita en MicroServices:ImportService
+                var baseUrl = builder.Configuration.GetValue<string>("MicroServices:ImportService");
+
+                // Si no está definida, buscar en AllowedOrigins una entrada que contenga "import-service"
+                if (string.IsNullOrWhiteSpace(baseUrl))
                 {
-                    client.BaseAddress = new Uri(baseUrl);
+                    var allowed = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+                    var candidate = allowed.FirstOrDefault(a => !string.IsNullOrWhiteSpace(a) && a.Contains("import-service", StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrWhiteSpace(candidate))
+                    {
+                        baseUrl = candidate.TrimEnd('/');
+                    }
                 }
+
+                // Fallback por defecto
+                if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    baseUrl = "http://import-service:8080";
+                }
+
+                client.BaseAddress = new Uri(baseUrl);
             });
 
             builder.Services.AddSingleton(provider =>

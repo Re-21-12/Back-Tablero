@@ -1,11 +1,12 @@
 using System;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using tablero_api.DTOS;
-using tablero_api.Services.Interfaces;
+using Microsoft.Extensions.Configuration;
 
 namespace tablero_api.Controllers
 {
@@ -13,79 +14,87 @@ namespace tablero_api.Controllers
     [Route("import")]
     public class ImportController : ControllerBase
     {
-        private readonly IImportService _importService;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<ImportController> _logger;
+        private readonly string _importServiceBaseUrl;
 
-        public ImportController(IImportService importService, ILogger<ImportController> logger)
+        public ImportController(IHttpClientFactory httpClientFactory, ILogger<ImportController> logger, IConfiguration configuration)
         {
-            _importService = importService;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _importServiceBaseUrl = configuration["ImportService:BaseUrl"] ?? throw new ArgumentNullException("ImportService:BaseUrl");
         }
 
         [HttpPost("equipo/csv")]
         public async Task<IActionResult> ImportEquiposCSV([FromForm] IFormFile file)
-            => await HandleFileImport(file, true, "equipo");
+            => await HandleFileProxy(file, true, "equipo");
 
         [HttpPost("equipo/json")]
         public async Task<IActionResult> ImportEquiposJSON([FromForm] IFormFile file)
-            => await HandleFileImport(file, false, "equipo");
+            => await HandleFileProxy(file, false, "equipo");
 
         [HttpPost("jugador/csv")]
         public async Task<IActionResult> ImportJugadoresCSV([FromForm] IFormFile file)
-            => await HandleFileImport(file, true, "jugador");
+            => await HandleFileProxy(file, true, "jugador");
 
         [HttpPost("jugador/json")]
         public async Task<IActionResult> ImportJugadoresJSON([FromForm] IFormFile file)
-            => await HandleFileImport(file, false, "jugador");
+            => await HandleFileProxy(file, false, "jugador");
 
         [HttpPost("localidad/csv")]
         public async Task<IActionResult> ImportLocalidadesCSV([FromForm] IFormFile file)
-            => await HandleFileImport(file, true, "localidad");
+            => await HandleFileProxy(file, true, "localidad");
 
         [HttpPost("localidad/json")]
         public async Task<IActionResult> ImportLocalidadesJSON([FromForm] IFormFile file)
-            => await HandleFileImport(file, false, "localidad");
+            => await HandleFileProxy(file, false, "localidad");
 
         [HttpPost("partido/csv")]
         public async Task<IActionResult> ImportPartidosCSV([FromForm] IFormFile file)
-            => await HandleFileImport(file, true, "partido");
+            => await HandleFileProxy(file, true, "partido");
 
         [HttpPost("partido/json")]
         public async Task<IActionResult> ImportPartidosJSON([FromForm] IFormFile file)
-            => await HandleFileImport(file, false, "partido");
+            => await HandleFileProxy(file, false, "partido");
 
-        private async Task<IActionResult> HandleFileImport(IFormFile file, bool isCsv, string tipo)
+        private async Task<IActionResult> HandleFileProxy(IFormFile file, bool isCsv, string tipo)
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new ImportResponse(0, 1, new System.Collections.Generic.List<string> { "El archivo está vacío" }));
+                return BadRequest(new { message = "El archivo está vacío" });
             }
 
             try
             {
-                using var ms = new MemoryStream();
-                await file.CopyToAsync(ms);
-                var bytes = ms.ToArray();
+                var client = _httpClientFactory.CreateClient();
+                var targetPath = $"{_importServiceBaseUrl.TrimEnd('/')}/import/{tipo}/{(isCsv ? "csv" : "json")}";
 
-                ImportResponse resp = tipo switch
+                using var content = new MultipartFormDataContent();
+                using var stream = file.OpenReadStream();
+                var fileContent = new StreamContent(stream);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+                content.Add(fileContent, "file", file.FileName);
+
+                var response = await client.PostAsync(targetPath, content);
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                // Reenviar código y cuerpo tal cual (asumiendo JSON). Si quieres, mapear a DTO antes.
+                return new ContentResult
                 {
-                    "equipo" => await _importService.ImportEquiposAsync(bytes, isCsv, file.FileName),
-                    "jugador" => await _importService.ImportJugadoresAsync(bytes, isCsv, file.FileName),
-                    "localidad" => await _importService.ImportLocalidadesAsync(bytes, isCsv, file.FileName),
-                    "partido" => await _importService.ImportPartidosAsync(bytes, isCsv, file.FileName),
-                    _ => throw new ArgumentException("Tipo no válido")
+                    StatusCode = (int)response.StatusCode,
+                    Content = responseBody,
+                    ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json"
                 };
-
-                return Ok(resp);
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error procesando importación");
-                return BadRequest(new ImportResponse(0, 1, new System.Collections.Generic.List<string> { "Error procesando archivo: " + ex.Message }));
+                _logger?.LogError(ex, "Error reenviando importación");
+                return BadRequest(new { message = "Error procesando archivo: " + ex.Message });
             }
         }
 
         [HttpGet("health")]
-        public IActionResult Health() => Ok("Microservicio funcionando correctamente");
+        public IActionResult Health() => Ok("Gateway funcionando correctamente");
     }
 }
