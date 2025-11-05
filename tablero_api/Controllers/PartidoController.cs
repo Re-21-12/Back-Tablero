@@ -14,7 +14,7 @@ namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class PartidoController : ControllerBase
     {
         private readonly IService<Partido> _partidoService;
@@ -257,7 +257,7 @@ namespace tablero_api.Controllers
             var actualizado = await _partidoService.UpdateAsync(partido);
 
             await _socketService.SendEventAsync("partido:" + actualizado.id_Partido, actualizado);
-            
+
             return Ok("Partido Actualizado");
         }
 
