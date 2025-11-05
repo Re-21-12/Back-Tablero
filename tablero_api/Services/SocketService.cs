@@ -7,7 +7,7 @@ using tablero_api.Services.Interfaces;
 
 public class SocketServiceConfig
 {
-    public string BaseUrl { get; set; } = "http://localhost:3000";
+    public string BaseUrl { get; set; } = "http://socket-server:3000";
 }
 
 public class SocketService : ISocketService
