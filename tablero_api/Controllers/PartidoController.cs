@@ -14,7 +14,7 @@ namespace tablero_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // [Authorize]
     public class PartidoController : ControllerBase
     {
         private readonly IService<Partido> _partidoService;
@@ -25,8 +25,10 @@ namespace tablero_api.Controllers
         private readonly HttpClient _httpClient;
         private readonly string _reportServiceBaseUrl; // <-- agregado
 
+        private readonly ISocketService _socketService;
 
-        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice, IService<Cuarto> cuartoService, HttpClient httpClient, IService<Jugador> jugadorService, IConfiguration configuration)
+
+        public PartidoController(IService<Partido> partidoService, IService<Equipo> equipoService, IService<Localidad> localidadSerice, IService<Cuarto> cuartoService, HttpClient httpClient, IService<Jugador> jugadorService, IConfiguration configuration, ISocketService socketService)
         {
             _partidoService = partidoService;
             _equipoService = equipoService;
@@ -35,6 +37,7 @@ namespace tablero_api.Controllers
             _jugadorService = jugadorService;
             _httpClient = httpClient;
             _reportServiceBaseUrl = configuration.GetValue<string>("MicroServices:ReportService") ?? "http://127.0.0.1:5001";
+            _socketService = socketService;
         }
         [AllowAnonymous]
         [HttpGet("Resultado")]
@@ -252,6 +255,9 @@ namespace tablero_api.Controllers
             }
 
             var actualizado = await _partidoService.UpdateAsync(partido);
+
+            await _socketService.SendEventAsync("partido:" + actualizado.id_Partido, actualizado);
+            
             return Ok("Partido Actualizado");
         }
 

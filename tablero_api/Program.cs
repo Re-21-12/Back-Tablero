@@ -137,7 +137,7 @@ namespace tablero_api
             // =====================================================
 
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection0"))
                        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             );
 
@@ -173,6 +173,18 @@ namespace tablero_api
 
                 client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
                 client.Timeout = TimeSpan.FromSeconds(cfg.TimeoutSeconds <= 0 ? 30 : cfg.TimeoutSeconds);
+            });
+
+            // =====================================================
+            // 🔸 SOCKET SERVICE (OPCIONES + HTTP CLIENT)
+            // =====================================================
+            builder.Services.Configure<SocketServiceConfig>(builder.Configuration.GetSection("SocketService"));
+
+            builder.Services.AddHttpClient<ISocketService, SocketService>((provider, client) =>
+            {
+                var config = provider.GetRequiredService<IOptions<SocketServiceConfig>>().Value;
+                client.BaseAddress = new Uri(config.BaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(30);
             });
 
             // =====================================================
@@ -276,9 +288,7 @@ namespace tablero_api
                 await next.Invoke();
             });
 
-            app.UseCors("AllowFrontend");
-            app.UseAuthentication();
-            app.UseAuthorization();
+
 
             // =====================================================
             // 🔸 SWAGGER UI
@@ -293,6 +303,7 @@ namespace tablero_api
                     c.SwaggerEndpoint("swagger/v1/swagger.json", "Tablero API v1");
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
+                app.UseRouting();
             }
 
             // =====================================================
@@ -305,7 +316,9 @@ namespace tablero_api
             // =====================================================
             // 🔸 ENDPOINTS DE CONTROLADORES
             // =====================================================
-
+            app.UseCors("AllowFrontend");
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.MapControllers();
 
             // =====================================================
