@@ -3,12 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-
-
-public interface ISocketService
-{
-    Task<bool> SendEventAsync(string typeEvent, object data);
-}
+using tablero_api.Services.Interfaces;
 
 public class SocketServiceConfig
 {
@@ -33,6 +28,7 @@ public class SocketService : ISocketService
 
         var jsonPayload = System.Text.Json.JsonSerializer.Serialize(new
         {
+            typeEvent,
             data
         });
 
