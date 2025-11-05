@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using tablero_api.Data;
 using tablero_api.Repositories;
 using tablero_api.Repositories.Interfaces;
-using tablero_api.Services;
-using tablero_api.Services.Interfaces;
+using tablero_api.Services;              
+using tablero_api.Services.Interfaces;  
 using tablero_api.Utils;
 
 namespace tablero_api
@@ -55,7 +54,7 @@ namespace tablero_api
                 });
             });
 
-            // Repos / servicios base
+            // ==== Repos / servicios base ====
             builder.Services.AddScoped<LocalidadRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
@@ -66,14 +65,23 @@ namespace tablero_api
                 return new CryptoHelper(key, iv);
             });
 
-            // DbContext
+
+
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+            // ==== Mailer (NO usa SQL Server: llama al micro en Postgres) ====
+            builder.Services.AddHttpClient<IMailerClient, MailerClient>(client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["Mailer:BaseUrl"] ?? "http://localhost:8080");
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
+            // Genéricos de repo/servicio
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
-            // CORS
+            // ==== CORS ====
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
             builder.Services.AddCors(options =>
             {
@@ -86,7 +94,7 @@ namespace tablero_api
                 });
             });
 
-            // JWT
+            // ==== JWT ====
             var jwtSettings = builder.Configuration.GetSection("Jwt");
             var keyBytes = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "YourSuperSecretKey123!");
 
@@ -101,7 +109,7 @@ namespace tablero_api
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = false, 
+                    ValidateIssuer = false,     
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
@@ -112,18 +120,6 @@ namespace tablero_api
             });
 
             builder.Services.AddAuthorization();
-            builder.Services.Configure<MailerServiceOptions>(builder.Configuration.GetSection("MailerService"));
-            builder.Services.AddHttpClient<IMailerServiceClient, MailerServiceClient>((sp, client) =>
-            {
-                var cfg = sp.GetRequiredService<IOptions<MailerServiceOptions>>().Value;
-
-                if (string.IsNullOrWhiteSpace(cfg.BaseUrl))
-                    throw new InvalidOperationException("Falta MailerService:BaseUrl en configuración.");
-
-                client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
-                client.Timeout = TimeSpan.FromSeconds(cfg.TimeoutSeconds <= 0 ? 30 : cfg.TimeoutSeconds);
-            });
-
 
             var app = builder.Build();
 
@@ -135,7 +131,6 @@ namespace tablero_api
                 app.UseSwaggerUI();
             }
 
-            // Migraciones al iniciar
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
