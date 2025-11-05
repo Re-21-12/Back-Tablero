@@ -137,7 +137,7 @@ namespace tablero_api
             // =====================================================
 
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection0"))
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
                        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             );
 
