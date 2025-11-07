@@ -293,7 +293,7 @@ namespace tablero_api
 
             app.Urls.Clear();
             // app.Urls.Add("https://localhost:7146");
-            app.Urls.Add("http://localhost:5232");
+            // app.Urls.Add("http://localhost:5232");
             app.Run();
         }
     }
