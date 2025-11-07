@@ -19,6 +19,7 @@ namespace tablero_api.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<PermisoDto>>> Get()
         {
             var permisos = await _adminService.GetAllPermisosAsync();
@@ -31,7 +32,7 @@ namespace tablero_api.Controllers
             var permiso = await _adminService.GetPermisoByIdAsync(id);
             if (permiso == null)
                 return NotFound();
-            
+
             return Ok(permiso);
         }
 
