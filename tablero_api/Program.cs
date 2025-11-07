@@ -19,8 +19,8 @@ using tablero_api.Data;
 using tablero_api.Extensions;
 using tablero_api.Repositories;
 using tablero_api.Repositories.Interfaces;
-using tablero_api.Services;              
-using tablero_api.Services.Interfaces;  
+using tablero_api.Services;
+using tablero_api.Services.Interfaces;
 using tablero_api.Utils;
 
 namespace tablero_api
@@ -54,7 +54,6 @@ namespace tablero_api
                     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                 });
 
-            // Swagger + Auth header (Bearer)
             builder.Services.AddEndpointsApiExplorer();
 
             // =====================================================
@@ -98,29 +97,28 @@ namespace tablero_api
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
-            //a
-            // Import service (forwarder) - register a named HttpClient "ImportService"
+
+            // 📩 Mailer Service (🚨 ESTA ES LA LÍNEA CLAVE)
+            builder.Services.AddScoped<MailerService>();
+
+            // =====================================================
+            // 🔸 IMPORT SERVICE
+            // =====================================================
+
             builder.Services.AddHttpClient("ImportService", client =>
             {
-                // Intentar URL explícita en MicroServices:ImportService
                 var baseUrl = builder.Configuration.GetValue<string>("MicroServices:ImportService");
 
-                // Si no está definida, buscar en AllowedOrigins una entrada que contenga "import-service"
                 if (string.IsNullOrWhiteSpace(baseUrl))
                 {
                     var allowed = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
                     var candidate = allowed.FirstOrDefault(a => !string.IsNullOrWhiteSpace(a) && a.Contains("import-service", StringComparison.OrdinalIgnoreCase));
                     if (!string.IsNullOrWhiteSpace(candidate))
-                    {
                         baseUrl = candidate.TrimEnd('/');
-                    }
                 }
 
-                // Fallback por defecto
                 if (string.IsNullOrWhiteSpace(baseUrl))
-                {
                     baseUrl = "http://import-service:8080";
-                }
 
                 client.BaseAddress = new Uri(baseUrl);
             });
@@ -142,7 +140,7 @@ namespace tablero_api
             );
 
             // =====================================================
-            // 🔸 SERVICIO HTTP ADMIN (MICROSERVICIO)
+            // 🔸 ADMIN SERVICE
             // =====================================================
 
             builder.Services.AddHttpClient("AdminService", client =>
@@ -159,25 +157,21 @@ namespace tablero_api
             });
 
             // =====================================================
-            // 🔸 MAILER SERVICE (OPCIONES + HTTP CLIENT)
+            // 🔸 MAILER SERVICE (HTTP CLIENT)
             // =====================================================
 
-            builder.Services.Configure<MailerServiceOptions>(builder.Configuration.GetSection("MailerService"));
+            var mailerBaseUrl = builder.Configuration.GetSection("MailerService")["BaseUrl"]
+                                ?? "http://localhost:8080";
 
-            builder.Services.AddHttpClient<IMailerServiceClient, MailerServiceClient>((sp, client) =>
+            builder.Services.AddHttpClient("MailerService", client =>
             {
-                var cfg = sp.GetRequiredService<IOptions<MailerServiceOptions>>().Value;
-
-                if (string.IsNullOrWhiteSpace(cfg.BaseUrl))
-                    throw new InvalidOperationException("Falta MailerService:BaseUrl en configuración.");
-
-                client.BaseAddress = new Uri(cfg.BaseUrl.TrimEnd('/'));
-                client.Timeout = TimeSpan.FromSeconds(cfg.TimeoutSeconds <= 0 ? 30 : cfg.TimeoutSeconds);
+                client.BaseAddress = new Uri(mailerBaseUrl);
             });
 
             // =====================================================
-            // 🔸 SOCKET SERVICE (OPCIONES + HTTP CLIENT)
+            // 🔸 SOCKET SERVICE
             // =====================================================
+
             builder.Services.Configure<SocketServiceConfig>(builder.Configuration.GetSection("SocketService"));
 
             builder.Services.AddHttpClient<ISocketService, SocketService>((provider, client) =>
@@ -188,7 +182,7 @@ namespace tablero_api
             });
 
             // =====================================================
-            // 🔸 CONFIGURAR CORS (PERMITE WILDCARDS Y ORÍGENES ESPECÍFICOS)
+            // 🔸 CORS
             // =====================================================
 
             var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
@@ -202,21 +196,17 @@ namespace tablero_api
                             if (string.IsNullOrEmpty(origin)) return false;
                             if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
 
-                            // Permite explícitamente http://localhost:4200 (implícito)
                             if (string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase)
                                 && string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
                                 && uri.Port == 4200)
-                            {
                                 return true;
-                            }
 
-                            // Permite orígenes exactos o cualquier subdominio de corazondeseda.lat
                             return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)
                                    || uri.Host.EndsWith(".corazondeseda.lat", StringComparison.OrdinalIgnoreCase);
                         })
                         .AllowAnyHeader()
                         .AllowAnyMethod()
-                        .AllowCredentials(); // ⚠️ Usa esto solo si frontend envía cookies o tokens con credenciales
+                        .AllowCredentials();
                 });
             });
 
@@ -228,19 +218,16 @@ namespace tablero_api
 
             builder.Services.AddAuthorization(options =>
             {
-                // 🔒 Política global: todos los endpoints requieren autenticación
                 options.DefaultPolicy = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
                     .RequireAuthenticatedUser()
                     .Build();
-
-                // 🚪 Permitir excepciones manuales [AllowAnonymous]
                 options.FallbackPolicy = null;
             });
 
             var app = builder.Build();
 
             // =====================================================
-            // 🔸 MIGRACIONES Y SEED DE BASE DE DATOS
+            // 🔸 MIGRACIONES Y SEED
             // =====================================================
 
             using (var scope = app.Services.CreateScope())
@@ -253,8 +240,7 @@ namespace tablero_api
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // Registrar y continuar (temporal). NO sustituye crear la migración correcta.
-                    logger.LogError(ex, "EF Core detectó cambios pendientes en el modelo. Crea y commitea una migración con 'dotnet ef migrations add <Name>' y vuelve a desplegar.");
+                    logger.LogError(ex, "EF Core detectó cambios pendientes. Crea una migración con 'dotnet ef migrations add <Name>'");
                 }
 
                 if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("SeedData", false))
@@ -265,30 +251,10 @@ namespace tablero_api
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"❌ Error al aplicar seed: {ex}");
+                        Console.WriteLine($" Error al aplicar seed: {ex}");
                     }
                 }
             }
-
-            // =====================================================
-            // 🔸 MIDDLEWARES GLOBALES
-            // =====================================================
-
-            app.MapGet("/", () => "✅ API funcionando correctamente").AllowAnonymous();
-
-            // Permite acceso libre a Swagger
-            app.Use(async (context, next) =>
-            {
-                var path = context.Request.Path.Value ?? string.Empty;
-                if (swaggerEnabled && path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
-                {
-                    await next.Invoke();
-                    return;
-                }
-                await next.Invoke();
-            });
-
-
 
             // =====================================================
             // 🔸 SWAGGER UI
@@ -299,32 +265,35 @@ namespace tablero_api
                 app.UseSwagger();
                 app.UseSwaggerUI(c =>
                 {
-                    c.RoutePrefix = ""; // Para acceso directo a dominio raíz
-                    c.SwaggerEndpoint("swagger/v1/swagger.json", "Tablero API v1");
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tablero API v1");
+                    c.RoutePrefix = string.Empty;
                     c.DocumentTitle = "Tablero API - Swagger";
                 });
-                app.UseRouting();
             }
 
             // =====================================================
-            // 🔸 RESPUESTA GLOBAL PARA OPTIONS (Preflight CORS)
+            // 🔸 PIPELINE DE MIDDLEWARE
             // =====================================================
 
-            app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok())
-               .AllowAnonymous();
-
-            // =====================================================
-            // 🔸 ENDPOINTS DE CONTROLADORES
-            // =====================================================
+            app.UseRouting();
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
 
+            // Endpoint base
+            app.MapGet("/", () => Results.Ok(" API funcionando correctamente")).AllowAnonymous();
+
+            // Respuesta OPTIONS (CORS preflight)
+            app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok()).AllowAnonymous();
+
             // =====================================================
             // 🔸 EJECUCIÓN FINAL
             // =====================================================
 
+            app.Urls.Clear();
+            app.Urls.Add("https://localhost:7146");
+            app.Urls.Add("http://localhost:5232");
             app.Run();
         }
     }
