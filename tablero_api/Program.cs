@@ -285,7 +285,16 @@ namespace tablero_api
             app.MapGet("/", () => Results.Ok(" API funcionando correctamente")).AllowAnonymous();
 
             // Respuesta OPTIONS (CORS preflight)
-            app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok()).AllowAnonymous();
+            app.Use(async (context, next) =>
+            {
+                if (HttpMethods.IsOptions(context.Request.Method))
+                {
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    await context.Response.CompleteAsync();
+                    return;
+                }
+                await next();
+            });
 
             // =====================================================
             // 🔸 EJECUCIÓN FINAL

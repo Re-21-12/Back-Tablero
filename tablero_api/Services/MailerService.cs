@@ -13,7 +13,17 @@ namespace tablero_api.Services
 
         public MailerService(IConfiguration config, IHttpClientFactory clientFactory)
         {
-            _httpClient = clientFactory.CreateClient();
+            // Intentamos usar el cliente nombrado "MailerService" si fue registrado en Program.cs;
+            // si no existe, CreateClient("MailerService") fallará y el factory devolverá un cliente por defecto.
+            try
+            {
+                _httpClient = clientFactory.CreateClient("MailerService");
+            }
+            catch
+            {
+                _httpClient = clientFactory.CreateClient();
+            }
+
             _baseUrl = config["MailerService:BaseUrl"]?.TrimEnd('/') ?? "http://localhost:8080";
         }
 
@@ -26,9 +36,11 @@ namespace tablero_api.Services
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync($"{_baseUrl}/send", content);
-            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Microservicio devolvió {response.StatusCode}: {body}");
 
-            return await response.Content.ReadFromJsonAsync<object>();
+            return JsonSerializer.Deserialize<object?>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         // ============================================================
@@ -37,8 +49,11 @@ namespace tablero_api.Services
         public async Task<object?> GetAllEmailsAsync()
         {
             var response = await _httpClient.GetAsync($"{_baseUrl}/emails");
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<object>();
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Microservicio devolvió {response.StatusCode}: {body}");
+
+            return JsonSerializer.Deserialize<object?>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         // ============================================================
@@ -47,9 +62,9 @@ namespace tablero_api.Services
         public async Task<PaginatedResult<object>> GetPaginatedEmailsAsync(int page, int pageSize)
         {
             var response = await _httpClient.GetAsync($"{_baseUrl}/emails?page={page}&pageSize={pageSize}");
-            response.EnsureSuccessStatusCode();
-
             var json = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Microservicio devolvió {response.StatusCode}: {json}");
 
             try
             {
@@ -86,7 +101,6 @@ namespace tablero_api.Services
         {
             var response = await _httpClient.GetAsync($"{_baseUrl}/emails/{id}");
             var json = await response.Content.ReadAsStringAsync();
-
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"Microservicio devolvió {response.StatusCode}: {json}");
 
@@ -132,9 +146,11 @@ namespace tablero_api.Services
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync($"{_baseUrl}/templates", content);
-            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Microservicio devolvió {response.StatusCode}: {body}");
 
-            return await response.Content.ReadFromJsonAsync<object>();
+            return JsonSerializer.Deserialize<object?>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         // ============================================================
@@ -146,9 +162,11 @@ namespace tablero_api.Services
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PutAsync($"{_baseUrl}/templates/{id}", content);
-            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Microservicio devolvió {response.StatusCode}: {body}");
 
-            return await response.Content.ReadFromJsonAsync<object>();
+            return JsonSerializer.Deserialize<object?>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         // ============================================================
@@ -164,8 +182,11 @@ namespace tablero_api.Services
         public async Task<object?> GetAllTemplatesAsync()
         {
             var response = await _httpClient.GetAsync($"{_baseUrl}/templates");
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<object>();
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Microservicio devolvió {response.StatusCode}: {body}");
+
+            return JsonSerializer.Deserialize<object?>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         }
 
         // ============================================================
