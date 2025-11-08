@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using System.Net;
 
 namespace tablero_api.Controllers
 {
@@ -22,7 +23,6 @@ namespace tablero_api.Controllers
         {
             _httpClientFactory = httpClientFactory;
             _logger = logger;
-            // Leer la URL desde MicroServices:ImportService (appsettings.json) si existe. No lanzamos excepción: el cliente nombrado también está registrado en Program.cs.
             _importServiceBaseUrl = configuration.GetValue<string>("MicroServices:ImportService");
         }
 
@@ -61,48 +61,53 @@ namespace tablero_api.Controllers
         private async Task<IActionResult> HandleFileProxy(IFormFile file, bool isCsv, string tipo)
         {
             if (file == null || file.Length == 0)
-            {
                 return BadRequest(new { message = "El archivo está vacío" });
-            }
 
             try
             {
-                // Preferimos el HttpClient nombrado "ImportService" (registrado en Program.cs con BaseAddress).
                 var client = _httpClientFactory.CreateClient("ImportService");
-                string targetPath;
 
+                string requestUri;
                 if (client.BaseAddress != null)
                 {
-                    // Usar ruta relativa cuando el HttpClient ya tenga BaseAddress
-                    targetPath = $"/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                    // Relative path when BaseAddress configured
+                    requestUri = $"/import/{tipo}/{(isCsv ? "csv" : "json")}";
                 }
                 else if (!string.IsNullOrWhiteSpace(_importServiceBaseUrl))
                 {
-                    targetPath = $"{_importServiceBaseUrl.TrimEnd('/')}/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                    requestUri = $"{_importServiceBaseUrl.TrimEnd('/')}/import/{tipo}/{(isCsv ? "csv" : "json")}";
                 }
                 else
                 {
-                    // Fallback hardcode por seguridad
-                    targetPath = $"http://import-service:8080/import/{tipo}/{(isCsv ? "csv" : "json")}";
+                    requestUri = $"http://import-service:8080/import/{tipo}/{(isCsv ? "csv" : "json")}";
                 }
 
                 using var content = new MultipartFormDataContent();
-                using var stream = file.OpenReadStream();
+                await using var stream = file.OpenReadStream();
                 var fileContent = new StreamContent(stream);
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+                // Match Spring Boot controller field name "file"
                 content.Add(fileContent, "file", file.FileName);
 
-                var response = await client.PostAsync(targetPath, content);
+                // Optional: set timeout per-request if needed by using CancellationTokenSource
+                var response = await client.PostAsync(requestUri, content);
 
                 var responseBody = await response.Content.ReadAsStringAsync();
 
-                // Reenviar código y cuerpo tal cual (asumiendo JSON). Si quieres, mapear a DTO antes.
+                // Preserve status code and content type (default to application/json)
+                var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/json";
+
                 return new ContentResult
                 {
                     StatusCode = (int)response.StatusCode,
                     Content = responseBody,
-                    ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json"
+                    ContentType = contentType
                 };
+            }
+            catch (HttpRequestException hre)
+            {
+                _logger?.LogError(hre, "HTTP error proxying import request");
+                return StatusCode((int)HttpStatusCode.BadGateway, new { message = "Error de comunicación con el servicio de importación", detail = hre.Message });
             }
             catch (Exception ex)
             {
